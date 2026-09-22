@@ -1,3 +1,4 @@
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   WebhookEndpoint,
@@ -51,7 +52,7 @@ export class WebhooksResource {
    * @returns The endpoint. The signing secret is not included.
    */
   async get(id: string): Promise<APIResponse<WebhookEndpoint>> {
-    return this.client.get<WebhookEndpoint>(`/v1/me/webhooks/${encodeURIComponent(id)}`);
+    return this.client.get<WebhookEndpoint>(`/v1/me/webhooks/${pathSegment(id)}`);
   }
 
   /**
@@ -62,7 +63,7 @@ export class WebhooksResource {
    * @returns The updated endpoint.
    */
   async update(id: string, params: UpdateWebhookEndpointParams): Promise<APIResponse<WebhookEndpoint>> {
-    return this.client.put<WebhookEndpoint>(`/v1/me/webhooks/${encodeURIComponent(id)}`, params);
+    return this.client.put<WebhookEndpoint>(`/v1/me/webhooks/${pathSegment(id)}`, params);
   }
 
   /**
@@ -72,7 +73,7 @@ export class WebhooksResource {
    * @returns Confirmation of the delete.
    */
   async delete(id: string): Promise<APIResponse<{ deleted: boolean }>> {
-    return this.client.delete<{ deleted: boolean }>(`/v1/me/webhooks/${encodeURIComponent(id)}`);
+    return this.client.delete<{ deleted: boolean }>(`/v1/me/webhooks/${pathSegment(id)}`);
   }
 
   /**
@@ -83,6 +84,6 @@ export class WebhooksResource {
    * @returns What your endpoint answered: status, latency and any error.
    */
   async test(id: string): Promise<APIResponse<WebhookTestResult>> {
-    return this.client.post<WebhookTestResult>(`/v1/me/webhooks/${encodeURIComponent(id)}/test`);
+    return this.client.post<WebhookTestResult>(`/v1/me/webhooks/${pathSegment(id)}/test`);
   }
 }

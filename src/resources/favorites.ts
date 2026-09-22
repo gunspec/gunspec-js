@@ -1,3 +1,4 @@
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Favorite,
@@ -51,7 +52,7 @@ export class FavoritesResource {
    * @returns The new state, so a button can render from the response.
    */
   async add(firearmId: string): Promise<APIResponse<FavoriteToggle>> {
-    return this.client.post<FavoriteToggle>(`/v1/me/favorites/${encodeURIComponent(firearmId)}`);
+    return this.client.post<FavoriteToggle>(`/v1/me/favorites/${pathSegment(firearmId)}`);
   }
 
   /**
@@ -61,6 +62,6 @@ export class FavoritesResource {
    * @returns The new state.
    */
   async remove(firearmId: string): Promise<APIResponse<FavoriteToggle>> {
-    return this.client.delete<FavoriteToggle>(`/v1/me/favorites/${encodeURIComponent(firearmId)}`);
+    return this.client.delete<FavoriteToggle>(`/v1/me/favorites/${pathSegment(firearmId)}`);
   }
 }

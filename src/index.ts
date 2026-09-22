@@ -59,6 +59,7 @@ export {
   ConnectionError,
   TimeoutError,
   ConfigurationError,
+  InvalidArgumentError,
   createAPIError,
 } from './core/errors'
 export type { APIErrorExtra, ErrorEnvelope } from './core/errors'

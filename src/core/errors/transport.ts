@@ -43,11 +43,25 @@ export class TimeoutError extends GunSpecError {
 }
 
 /**
- * Thrown before any request is sent when the client is configured in a way
- * that would leak the credential or cannot work: an API key over plain
- * `http://` to a remote host, or a base URL that is not a URL.
+ * Thrown when the client is configured in a way that would leak the
+ * credential or cannot work: an API key over plain `http://` to a remote host,
+ * or a base URL that is not a URL, both before any request is sent. Also
+ * thrown in a browser when an endpoint redirects under the `X-API-Key` scheme,
+ * because the browser hides where the redirect goes and would carry the header
+ * there.
  */
 export class ConfigurationError extends GunSpecError {
   static override readonly brand: string = 'ConfigurationError';
   override readonly name: string = 'ConfigurationError';
+}
+
+/**
+ * Thrown before any request is sent when an argument cannot be placed in a
+ * request as given. An id of `''`, `.` or `..` is the case that matters: URL
+ * parsing collapses such a segment, so `webhooks.test('..')` would otherwise
+ * post to `/v1/me/test` rather than fail.
+ */
+export class InvalidArgumentError extends GunSpecError {
+  static override readonly brand: string = 'InvalidArgumentError';
+  override readonly name: string = 'InvalidArgumentError';
 }

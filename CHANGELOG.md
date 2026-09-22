@@ -2,168 +2,175 @@
 
 All notable changes to `@buun_group/gunspec-sdk`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package follows [Semantic Versioning](https://semver.org/).
 
-## [0.13.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.12.0...sdk-ts-v0.13.0) (2026-09-22)
+## 0.13.1 (2026-09-22)
+
+
+### Fixed
+
+* **sdk,sdk-python:** the models carry the fields the API now serves (925ad51)
+
+## 0.13.0 (2026-09-22)
 
 
 ### Added
 
-* a call earns experience, and the account can read its own log ([e4628f1](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e4628f18d2a11baf237bfdab95b4c9f886474dc5))
-* a call earns experience, and the account has a level ([cc22aa9](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/cc22aa9c6a85b17a5fdac348de0111eb71139251))
-* breadth, counted by the nightly job rather than by every request ([0b7f943](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/0b7f943b18db39c03bae1577dfdfb82e9261adfc))
-* build apps/site, serve ten fields as arrays, enforce the craft rules ([bcec6f3](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/bcec6f30fbb04ff4d017a3021f776472b0c74e5a))
-* give the MCP the docs, report the daily allowance, retire three web pages ([a5638f8](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/a5638f8281e702b0418f07a21e238f7af1294b2e))
-* publish dated updates, and give the reasoning a page of its own ([e7f1e80](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e7f1e80ddbb32a82b47cddfcb14448b9bfa5deba))
-* publish twenty-five system checks, and give ammunition a change token ([ecd0b4c](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/ecd0b4c4e4ed2e7ea966cd2cc63e3dd28d4ac86c))
-* the standing reports days called and the run of them ([7f6e64f](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7f6e64fec180cb2c25afc7963ae8033d9872f709))
+* a call earns experience, and the account can read its own log (e4628f1)
+* a call earns experience, and the account has a level (cc22aa9)
+* breadth, counted by the nightly job rather than by every request (0b7f943)
+* build apps/site, serve ten fields as arrays, enforce the craft rules (bcec6f3)
+* give the MCP the docs, report the daily allowance, retire three web pages (a5638f8)
+* publish dated updates, and give the reasoning a page of its own (e7f1e80)
+* publish twenty-five system checks, and give ammunition a change token (ecd0b4c)
+* the standing reports days called and the run of them (7f6e64f)
 
-## [0.12.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.11.2...sdk-ts-v0.12.0) (2026-09-18)
-
-
-### Added
-
-* a status badge of our own, and a badges section for directories ([7beb38f](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7beb38f215657a51fc1e2cb3f060b999ace3385f))
-* a system token that only works through the MCP server ([958eb95](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/958eb9540ff93a68b6ef8342b4dc3fdafcea75ca))
-
-## [0.11.2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.11.1...sdk-ts-v0.11.2) (2026-09-17)
-
-
-### Fixed
-
-* document assignedTo on the public data task list ([9d42cd5](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/9d42cd503267727b2c3b820a35cf463023a3d022))
-
-## [0.11.1](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.11.0...sdk-ts-v0.11.1) (2026-09-17)
-
-
-### Fixed
-
-* API sample runs survive a closed data task, and print a live blog post ([2cbaddf](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/2cbaddf6b10827290b0ea4c4ed0db7296a5d7d77))
-* SDK example runs report unreleased methods, and print values production serves ([097c5b6](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/097c5b6de3ff1c75ae554287cf67eedf6e5a2837))
-
-## [0.11.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.10.0...sdk-ts-v0.11.0) (2026-09-17)
+## 0.12.0 (2026-09-18)
 
 
 ### Added
 
-* **sdk:** MCP tools that answer how to call the API from the reference ([2ef0007](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/2ef00079e18d219a19fadb9fff2eccc9b70b1193))
-* serve the API reference to code at /v1/docs ([febef92](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/febef920fa472dfc1071918e40694e510e1e57fe))
+* a status badge of our own, and a badges section for directories (7beb38f)
+* a system token that only works through the MCP server (958eb95)
+
+## 0.11.2 (2026-09-17)
 
 
 ### Fixed
 
-* document GET /v1/data/tasks/summary, and test the docs resources in both SDKs ([e17812f](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e17812ff4db2dae84a76dda638fb7238c8f83af5))
-* require an Explorer key for /v1/docs ([bccd31b](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/bccd31b4680c216e7bc8dce8975a053f2aee8abb))
-* **sdk:** MCP examples name records whose media is populated ([99b98ed](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/99b98ed27fb71bc0138458764a2b86dd65608251))
-* **sdk:** say which plan an MCP tool needs end to end, and what its arguments are sent as ([196fce7](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/196fce725c7d2edaf9d896af9663b7524a2f6b6c))
+* document assignedTo on the public data task list (9d42cd5)
 
-## [0.10.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.9.0...sdk-ts-v0.10.0) (2026-09-17)
+## 0.11.1 (2026-09-17)
+
+
+### Fixed
+
+* API sample runs survive a closed data task, and print a live blog post (2cbaddf)
+* SDK example runs report unreleased methods, and print values production serves (097c5b6)
+
+## 0.11.0 (2026-09-17)
 
 
 ### Added
 
-* add MCP example usage and hold printed answers to the live server ([4fb0637](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/4fb06375f6e5420837d9dad17eb1f65f127af15a))
-* **sdk:** give every MCP tool the plain questions it answers ([cfb93ae](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/cfb93aeeecd7c9ecccefa0f18ee208dfdae6e70c))
+* **sdk:** MCP tools that answer how to call the API from the reference (2ef0007)
+* serve the API reference to code at /v1/docs (febef92)
 
 
 ### Fixed
 
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* document GET /v1/data/tasks/summary, and test the docs resources in both SDKs (e17812f)
+* require an Explorer key for /v1/docs (bccd31b)
+* **sdk:** MCP examples name records whose media is populated (99b98ed)
+* **sdk:** say which plan an MCP tool needs end to end, and what its arguments are sent as (196fce7)
 
-## [0.9.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.8.3...sdk-ts-v0.9.0) (2026-09-17)
+## 0.10.0 (2026-09-17)
 
 
 ### Added
 
-* add MCP example usage and hold printed answers to the live server ([4fb0637](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/4fb06375f6e5420837d9dad17eb1f65f127af15a))
-* **sdk:** give every MCP tool the plain questions it answers ([cfb93ae](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/cfb93aeeecd7c9ecccefa0f18ee208dfdae6e70c))
+* add MCP example usage and hold printed answers to the live server (4fb0637)
+* **sdk:** give every MCP tool the plain questions it answers (cfb93ae)
 
 
 ### Fixed
 
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
 
-## [0.8.3](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.8.2...sdk-ts-v0.8.3) (2026-09-17)
-
-
-### Fixed
-
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
-
-## [0.8.2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.8.1...sdk-ts-v0.8.2) (2026-09-17)
-
-
-### Fixed
-
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
-
-## [0.8.1](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.8.0...sdk-ts-v0.8.1) (2026-09-17)
-
-
-### Fixed
-
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
-
-## [0.8.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.7.0...sdk-ts-v0.8.0) (2026-09-17)
+## 0.9.0 (2026-09-17)
 
 
 ### Added
 
-* publish whether the reference is still true, and run the cURL samples ([7803ed0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7803ed0b76eab49d8a1d7abd7a5ca60cd1d67896))
-* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs ([eefc1c2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/eefc1c2e966ee3392feccd75ef9d26d4451fab60))
+* add MCP example usage and hold printed answers to the live server (4fb0637)
+* **sdk:** give every MCP tool the plain questions it answers (cfb93ae)
 
 
 ### Fixed
 
-* **sdk:** correct BlogPost to the shape /v1/blog sends ([0535cc6](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/0535cc651549815d5d3497c788c785241c7b5ffc))
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
 
-## [0.7.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.6.0...sdk-ts-v0.7.0) (2026-09-17)
-
-
-### Added
-
-* publish whether the reference is still true, and run the cURL samples ([7803ed0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7803ed0b76eab49d8a1d7abd7a5ca60cd1d67896))
-* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs ([eefc1c2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/eefc1c2e966ee3392feccd75ef9d26d4451fab60))
+## 0.8.3 (2026-09-17)
 
 
 ### Fixed
 
-* **sdk:** correct BlogPost to the shape /v1/blog sends ([0535cc6](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/0535cc651549815d5d3497c788c785241c7b5ffc))
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
 
-## [0.6.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.5.1...sdk-ts-v0.6.0) (2026-09-17)
-
-
-### Added
-
-* publish whether the reference is still true, and run the cURL samples ([7803ed0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7803ed0b76eab49d8a1d7abd7a5ca60cd1d67896))
-* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs ([eefc1c2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/eefc1c2e966ee3392feccd75ef9d26d4451fab60))
+## 0.8.2 (2026-09-17)
 
 
 ### Fixed
 
-* **sdk:** correct BlogPost to the shape /v1/blog sends ([0535cc6](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/0535cc651549815d5d3497c788c785241c7b5ffc))
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
 
-## [0.5.1](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.5.0...sdk-ts-v0.5.1) (2026-09-17)
+## 0.8.1 (2026-09-17)
 
 
 ### Fixed
 
-* **sdk:** instanceof on SDK errors works across the client and tools entries ([e708c1e](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/e708c1ea7aad9c2d9e88df950cb73bea7c819e9e))
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
 
-## [0.5.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.4.0...sdk-ts-v0.5.0) (2026-09-17)
-
-
-### Added
-
-* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs ([eefc1c2](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/eefc1c2e966ee3392feccd75ef9d26d4451fab60))
-
-## [0.4.0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/compare/sdk-ts-v0.3.0...sdk-ts-v0.4.0) (2026-09-13)
+## 0.8.0 (2026-09-17)
 
 
 ### Added
 
-* publish whether the reference is still true, and run the cURL samples ([7803ed0](https://github.com/BuunGroupCore/gunspec-vite-v6-cloudflare/commit/7803ed0b76eab49d8a1d7abd7a5ca60cd1d67896))
+* publish whether the reference is still true, and run the cURL samples (7803ed0)
+* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs (eefc1c2)
+
+
+### Fixed
+
+* **sdk:** correct BlogPost to the shape /v1/blog sends (0535cc6)
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
+
+## 0.7.0 (2026-09-17)
+
+
+### Added
+
+* publish whether the reference is still true, and run the cURL samples (7803ed0)
+* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs (eefc1c2)
+
+
+### Fixed
+
+* **sdk:** correct BlogPost to the shape /v1/blog sends (0535cc6)
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
+
+## 0.6.0 (2026-09-17)
+
+
+### Added
+
+* publish whether the reference is still true, and run the cURL samples (7803ed0)
+* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs (eefc1c2)
+
+
+### Fixed
+
+* **sdk:** correct BlogPost to the shape /v1/blog sends (0535cc6)
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
+
+## 0.5.1 (2026-09-17)
+
+
+### Fixed
+
+* **sdk:** instanceof on SDK errors works across the client and tools entries (e708c1e)
+
+## 0.5.0 (2026-09-17)
+
+
+### Added
+
+* **sdk:** workflow tools, MCP usage and manufacturer status in both SDKs (eefc1c2)
+
+## 0.4.0 (2026-09-13)
+
+
+### Added
+
+* publish whether the reference is still true, and run the cURL samples (7803ed0)
 
 ### Changed
 

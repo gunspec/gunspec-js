@@ -180,11 +180,21 @@ export class GunSpec {
   /** The underlying HTTP client (for advanced use) */
   private readonly _client: HttpClient
 
-  /** What this client was built with, so {@link withOptions} can derive another. */
-  private readonly _options: ClientOptions
+  /**
+   * What this client was built with, so {@link withOptions} can derive
+   * another. Everything but the key, which is held in {@link #apiKey}.
+   */
+  private readonly _options: Omit<ClientOptions, 'apiKey'>
+
+  /* An ES private field, not a plain property, so `console.log(client)` and
+     `util.inspect` cannot print the key. It is kept only so `withOptions`
+     can carry it over. */
+  readonly #apiKey: string | null | undefined
 
   constructor(options: ClientOptions = {}) {
-    this._options = { ...options }
+    const { apiKey, ...rest } = options
+    this._options = rest
+    this.#apiKey = apiKey
     this._client = new HttpClient({
       baseUrl: options.baseURL ?? 'https://api.gunspec.io',
       timeout: options.timeout ?? 30_000,
@@ -251,11 +261,16 @@ export class GunSpec {
    * ```
    */
   withOptions(overrides: Partial<ClientOptions>): GunSpec {
-    return new GunSpec({ ...this._options, ...overrides })
+    return new GunSpec({ ...this._options, apiKey: this.#apiKey, ...overrides })
   }
 
   /** What `JSON.stringify` and loggers see: the transport's masked view, never the key. */
   toJSON(): Record<string, unknown> {
     return { version: VERSION, ...this._client.toJSON() }
+  }
+
+  /** What `console.log` and `util.inspect` print in Node, Bun and Deno: the same masked view. */
+  [Symbol.for('nodejs.util.inspect.custom')](): Record<string, unknown> {
+    return this.toJSON()
   }
 }

@@ -1,3 +1,4 @@
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   SupportTicket,
@@ -54,7 +55,7 @@ export class SupportResource {
    * @returns The ticket and every reply on it, oldest first.
    */
   async get(ticketId: string): Promise<APIResponse<SupportTicketDetail>> {
-    return this.client.get<SupportTicketDetail>(`/v1/me/support/${encodeURIComponent(ticketId)}`);
+    return this.client.get<SupportTicketDetail>(`/v1/me/support/${pathSegment(ticketId)}`);
   }
 
   /**
@@ -65,6 +66,6 @@ export class SupportResource {
    * @returns The stored reply.
    */
   async reply(ticketId: string, params: CreateReplyParams): Promise<APIResponse<SupportTicketReply>> {
-    return this.client.post<SupportTicketReply>(`/v1/me/support/${encodeURIComponent(ticketId)}/replies`, params);
+    return this.client.post<SupportTicketReply>(`/v1/me/support/${pathSegment(ticketId)}/replies`, params);
   }
 }

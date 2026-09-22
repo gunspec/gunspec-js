@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Firearm,
@@ -699,7 +700,7 @@ export class FirearmsResource {
    */
   async getSchematics(id: string): Promise<APIResponse<FirearmSchematic[]>> {
     return this.client.get<FirearmSchematic[]>(
-      `/v1/firearms/${encodeURIComponent(id)}/schematics`,
+      `/v1/firearms/${pathSegment(id)}/schematics`,
     );
   }
 

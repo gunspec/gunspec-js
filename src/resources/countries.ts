@@ -7,6 +7,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse } from '../core';
 import type {
   Country,
@@ -73,6 +74,6 @@ export class CountriesResource {
    * ```
    */
   async getArsenal(code: string): Promise<APIResponse<CountryArsenal>> {
-    return this.client.get<CountryArsenal>(`/v1/countries/${encodeURIComponent(code)}/arsenal`);
+    return this.client.get<CountryArsenal>(`/v1/countries/${pathSegment(code)}/arsenal`);
   }
 }

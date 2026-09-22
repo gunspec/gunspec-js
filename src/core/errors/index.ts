@@ -22,7 +22,7 @@ export {
   ServiceUnavailableError,
 } from './api.js';
 export type { APIErrorExtra } from './api.js';
-export { ConnectionError, TimeoutError, ConfigurationError } from './transport.js';
+export { ConnectionError, TimeoutError, ConfigurationError, InvalidArgumentError } from './transport.js';
 export { createAPIError, parseRetryAfter } from './factory.js';
 export type { ErrorEnvelope } from './factory.js';
 export { defaultReasonFor } from './reasons.js';

@@ -7,6 +7,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Category,
@@ -74,7 +75,7 @@ export class CategoriesResource {
    */
   async getFirearms(slug: string, params?: PaginationParams): Promise<PaginatedResponse<Firearm>> {
     return this.client.getPaginated<Firearm>(
-      `/v1/categories/${encodeURIComponent(slug)}/firearms`,
+      `/v1/categories/${pathSegment(slug)}/firearms`,
       params,
     );
   }

@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type { BlogPost, ChangelogEntry, PaginationParams, SiteNotice } from '../types';
 
@@ -69,7 +70,7 @@ export class ContentResource {
    * @throws {NotFoundError} If no entry has that id.
    */
   async getChangelogEntry(id: string | number): Promise<APIResponse<ChangelogEntry>> {
-    return this.client.get<ChangelogEntry>(`/v1/changelog/${encodeURIComponent(String(id))}`);
+    return this.client.get<ChangelogEntry>(`/v1/changelog/${pathSegment(id)}`);
   }
 
   /**
@@ -91,7 +92,7 @@ export class ContentResource {
    * @throws {NotFoundError} If no published post has that slug.
    */
   async getBlogPost(slug: string): Promise<APIResponse<BlogPost>> {
-    return this.client.get<BlogPost>(`/v1/blog/${encodeURIComponent(slug)}`);
+    return this.client.get<BlogPost>(`/v1/blog/${pathSegment(slug)}`);
   }
 
   /**

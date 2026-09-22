@@ -9,6 +9,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   GameStatsVersion,
@@ -75,7 +76,7 @@ export class GameStatsResource {
    */
   async listFirearms(version: string, params?: ListSnapshotFirearmsParams): Promise<PaginatedResponse<GameStatsSnapshotEntry>> {
     return this.client.getPaginated<GameStatsSnapshotEntry>(
-      `/v1/game-stats/versions/${encodeURIComponent(version)}/firearms`,
+      `/v1/game-stats/versions/${pathSegment(version)}/firearms`,
       params,
     );
   }
@@ -97,7 +98,7 @@ export class GameStatsResource {
    */
   async getFirearm(version: string, id: string): Promise<APIResponse<GameStatsSnapshotEntry>> {
     return this.client.get<GameStatsSnapshotEntry>(
-      `/v1/game-stats/versions/${encodeURIComponent(version)}/firearms/${encodeURIComponent(id)}`,
+      `/v1/game-stats/versions/${pathSegment(version)}/firearms/${pathSegment(id)}`,
     );
   }
 }

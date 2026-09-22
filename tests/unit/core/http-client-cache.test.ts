@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HttpClient } from '../../../src/core/http-client';
 import { MemoryETagStore } from '../../../src/core/etag-cache';
 import { ConfigurationError, GunSpecError, RateLimitError, ServiceUnavailableError } from '../../../src/core/errors';
-import { FIXTURE_KEY, FIXTURE_KEY_HINT } from '../../helpers/keys';
+import { FIXTURE_KEY, FIXTURE_KEY_HINT, FIXTURE_KEY_OTHER } from '../../helpers/keys';
 
 const fetchMock = vi.fn();
 
@@ -70,6 +70,22 @@ describe('ETag cache', () => {
     await b.get('/v1/x');
     expect(lastInit().headers['If-None-Match']).toBeUndefined();
     expect(store.size).toBe(2);
+  });
+
+  it('namespaces each credential by a SHA-256 fingerprint, never the key', async () => {
+    const store = new MemoryETagStore();
+    const keys: string[] = [];
+    const recording = { get: (k: string) => store.get(k), set: (k: string, e: Parameters<typeof store.set>[1]) => { keys.push(k); store.set(k, e); } };
+    fetchMock.mockImplementation(async () => json({ success: true, data: 1 }, { headers: { ETag: '"t"' } }));
+    await make({ etagCache: recording, auth: { apiKey: FIXTURE_KEY } }).get('/v1/x');
+    await make({ etagCache: recording, auth: { apiKey: FIXTURE_KEY_OTHER } }).get('/v1/x');
+    await make({ etagCache: recording, auth: { apiKey: FIXTURE_KEY } }).get('/v1/y');
+    expect(keys).toHaveLength(3);
+    const prefixes = keys.map((k) => k.split(' ')[0]);
+    for (const prefix of prefixes) expect(prefix).toMatch(/^[0-9a-f]{64}$/);
+    expect(prefixes[0]).not.toBe(prefixes[1]);
+    expect(prefixes[0]).toBe(prefixes[2]);
+    for (const k of keys) expect(k).not.toContain(FIXTURE_KEY);
   });
 
   it('works for paginated responses and keeps meta', async () => {
@@ -179,6 +195,25 @@ describe('transport security', () => {
   it('leaves a relative, same-origin base URL alone', () => {
     expect(() => make({ baseUrl: '' })).not.toThrow();
     expect(() => make({ baseUrl: '/api' })).not.toThrow();
+  });
+
+  it('treats a protocol-relative base URL as absolute', () => {
+    /* Outside a page there is no scheme to inherit, so it cannot be checked. */
+    expect(() => make({ baseUrl: '//evil.example' })).toThrow(ConfigurationError);
+    expect(() => make({ baseUrl: '/\\evil.example' })).toThrow(ConfigurationError);
+
+    /* In a page it takes the page's scheme and meets the same rules. */
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'location');
+    try {
+      Object.defineProperty(globalThis, 'location', { value: { href: 'http://shop.example/' }, configurable: true });
+      expect(() => make({ baseUrl: '//evil.example' })).toThrow(/Refusing to send an API key over http:/);
+      expect(() => make({ baseUrl: '//localhost:8787' })).not.toThrow();
+      Object.defineProperty(globalThis, 'location', { value: { href: 'https://shop.example/' }, configurable: true });
+      expect(() => make({ baseUrl: '//api.example.com' })).not.toThrow();
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'location', original);
+      else delete (globalThis as { location?: unknown }).location;
+    }
   });
 
   it('refuses a base URL that is not a URL', () => {

@@ -10,6 +10,7 @@
  * @module
  */
 
+import { pathSegment } from '../../core/path';
 import type {
   HttpClient,
   APIResponse,
@@ -32,43 +33,43 @@ import type {
 } from './types';
 
 export function get(client: HttpClient, id: string): Promise<APIResponse<FirearmDetail>> {
-  return client.get<FirearmDetail>(`/v1/firearms/${encodeURIComponent(id)}`);
+  return client.get<FirearmDetail>(`/v1/firearms/${pathSegment(id)}`);
 }
 
 export function getVariants(client: HttpClient, id: string): Promise<APIResponse<Firearm[]>> {
-  return client.get<Firearm[]>(`/v1/firearms/${encodeURIComponent(id)}/variants`);
+  return client.get<Firearm[]>(`/v1/firearms/${pathSegment(id)}/variants`);
 }
 
 export function getImages(client: HttpClient, id: string): Promise<APIResponse<FirearmImage[]>> {
-  return client.get<FirearmImage[]>(`/v1/firearms/${encodeURIComponent(id)}/images`);
+  return client.get<FirearmImage[]>(`/v1/firearms/${pathSegment(id)}/images`);
 }
 
 export function getGameStats(client: HttpClient, id: string): Promise<APIResponse<GameStats>> {
-  return client.get<GameStats>(`/v1/firearms/${encodeURIComponent(id)}/game-stats`);
+  return client.get<GameStats>(`/v1/firearms/${pathSegment(id)}/game-stats`);
 }
 
 export function getDimensions(client: HttpClient, id: string): Promise<APIResponse<Dimensions>> {
-  return client.get<Dimensions>(`/v1/firearms/${encodeURIComponent(id)}/dimensions`);
+  return client.get<Dimensions>(`/v1/firearms/${pathSegment(id)}/dimensions`);
 }
 
 export function getUsers(client: HttpClient, id: string): Promise<APIResponse<FirearmUser[]>> {
-  return client.get<FirearmUser[]>(`/v1/firearms/${encodeURIComponent(id)}/users`);
+  return client.get<FirearmUser[]>(`/v1/firearms/${pathSegment(id)}/users`);
 }
 
 export function getFamilyTree(client: HttpClient, id: string): Promise<APIResponse<FamilyTree>> {
-  return client.get<FamilyTree>(`/v1/firearms/${encodeURIComponent(id)}/family-tree`);
+  return client.get<FamilyTree>(`/v1/firearms/${pathSegment(id)}/family-tree`);
 }
 
 export function getSimilar(client: HttpClient, id: string): Promise<APIResponse<SimilarFirearm[]>> {
-  return client.get<SimilarFirearm[]>(`/v1/firearms/${encodeURIComponent(id)}/similar`);
+  return client.get<SimilarFirearm[]>(`/v1/firearms/${pathSegment(id)}/similar`);
 }
 
 export function getAdoptionMap(client: HttpClient, id: string): Promise<APIResponse<AdoptionMap>> {
-  return client.get<AdoptionMap>(`/v1/firearms/${encodeURIComponent(id)}/adoption-map`);
+  return client.get<AdoptionMap>(`/v1/firearms/${pathSegment(id)}/adoption-map`);
 }
 
 export function getGameProfile(client: HttpClient, id: string): Promise<APIResponse<GameProfile>> {
-  return client.get<GameProfile>(`/v1/firearms/${encodeURIComponent(id)}/game-profile`);
+  return client.get<GameProfile>(`/v1/firearms/${pathSegment(id)}/game-profile`);
 }
 
 export function getSilhouette(
@@ -77,7 +78,7 @@ export function getSilhouette(
   params?: SilhouetteParams,
 ): Promise<APIResponse<Silhouette>> {
   return client.get<Silhouette>(
-    `/v1/firearms/${encodeURIComponent(id)}/silhouette`,
+    `/v1/firearms/${pathSegment(id)}/silhouette`,
     params,
   );
 }
@@ -88,7 +89,7 @@ export function calculate(
   params: CalculateBallisticsParams,
 ): Promise<APIResponse<FirearmCalculation>> {
   return client.get<FirearmCalculation>(
-    `/v1/firearms/${encodeURIComponent(id)}/calculate`,
+    `/v1/firearms/${pathSegment(id)}/calculate`,
     params,
   );
 }
@@ -99,7 +100,7 @@ export function load(
   params?: LoadFirearmParams,
 ): Promise<APIResponse<FirearmLoadProfile>> {
   return client.get<FirearmLoadProfile>(
-    `/v1/firearms/${encodeURIComponent(id)}/load`,
+    `/v1/firearms/${pathSegment(id)}/load`,
     params,
   );
 }

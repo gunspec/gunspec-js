@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   CaliberFamily,
@@ -153,7 +154,7 @@ export class CalibersResource {
    * ```
    */
   async get(id: string): Promise<APIResponse<Caliber>> {
-    return this.client.get<Caliber>(`/v1/calibers/${encodeURIComponent(id)}`);
+    return this.client.get<Caliber>(`/v1/calibers/${pathSegment(id)}`);
   }
 
   /**
@@ -173,7 +174,7 @@ export class CalibersResource {
    */
   async getFirearms(id: string, params?: PaginationParams): Promise<PaginatedResponse<Firearm>> {
     return this.client.getPaginated<Firearm>(
-      `/v1/calibers/${encodeURIComponent(id)}/firearms`,
+      `/v1/calibers/${pathSegment(id)}/firearms`,
       params,
     );
   }
@@ -193,7 +194,7 @@ export class CalibersResource {
    * ```
    */
   async getParentChain(id: string): Promise<APIResponse<Caliber[]>> {
-    return this.client.get<Caliber[]>(`/v1/calibers/${encodeURIComponent(id)}/parent-chain`);
+    return this.client.get<Caliber[]>(`/v1/calibers/${pathSegment(id)}/parent-chain`);
   }
 
   /**
@@ -213,7 +214,7 @@ export class CalibersResource {
    * ```
    */
   async getFamily(id: string): Promise<APIResponse<CaliberFamily>> {
-    return this.client.get<CaliberFamily>(`/v1/calibers/${encodeURIComponent(id)}/family`);
+    return this.client.get<CaliberFamily>(`/v1/calibers/${pathSegment(id)}/family`);
   }
 
   /**
@@ -235,7 +236,7 @@ export class CalibersResource {
    */
   async getAmmunition(id: string, params?: PaginationParams): Promise<PaginatedResponse<Ammunition>> {
     return this.client.getPaginated<Ammunition>(
-      `/v1/calibers/${encodeURIComponent(id)}/ammunition`,
+      `/v1/calibers/${pathSegment(id)}/ammunition`,
       params,
     );
   }

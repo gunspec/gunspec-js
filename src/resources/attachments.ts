@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Attachment,
@@ -46,13 +47,13 @@ export class AttachmentsResource {
 
   /** Get one attachment with its requirements, provisions and caliber ratings. */
   async get(id: string): Promise<APIResponse<AttachmentDetail>> {
-    return this.client.get<AttachmentDetail>(`/v1/attachments/${encodeURIComponent(id)}`);
+    return this.client.get<AttachmentDetail>(`/v1/attachments/${pathSegment(id)}`);
   }
 
   /** List the firearms an attachment fits, with how each fit was reached. Studio. */
   async getFirearms(id: string, params?: PaginationParams): Promise<PaginatedResponse<AttachmentFirearmFit>> {
     return this.client.getPaginated<AttachmentFirearmFit>(
-      `/v1/attachments/${encodeURIComponent(id)}/firearms`,
+      `/v1/attachments/${pathSegment(id)}/firearms`,
       params,
     );
   }
@@ -62,7 +63,7 @@ export class AttachmentsResource {
    * with each offer's `clickId` so the seller can see the visit came from you.
    */
   async getOffers(id: string, params?: OffersParams): Promise<APIResponse<PublicOffer[]>> {
-    return this.client.get<PublicOffer[]>(`/v1/attachments/${encodeURIComponent(id)}/offers`, params);
+    return this.client.get<PublicOffer[]>(`/v1/attachments/${pathSegment(id)}/offers`, params);
   }
 
   /** Iterate every attachment matching the filters, fetching pages on demand. */

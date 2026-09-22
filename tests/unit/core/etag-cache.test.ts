@@ -45,20 +45,37 @@ describe('MemoryETagStore', () => {
 });
 
 describe('credentialFingerprint', () => {
-  it('is stable for the same key and different across keys', () => {
-    expect(credentialFingerprint('gsk_abc')).toBe(credentialFingerprint('gsk_abc'));
-    expect(credentialFingerprint('gsk_abc')).not.toBe(credentialFingerprint('gsk_abd'));
+  it('is stable for the same key and different across keys', async () => {
+    expect(await credentialFingerprint('gsk_abc')).toBe(await credentialFingerprint('gsk_abc'));
+    expect(await credentialFingerprint('gsk_abc')).not.toBe(await credentialFingerprint('gsk_abd'));
   });
 
-  it('never contains the key', () => {
-    const key = FIXTURE_KEY;
-    expect(credentialFingerprint(key)).not.toContain('gsk_');
-    expect(credentialFingerprint(key)).toMatch(/^[0-9a-f]{8}$/);
+  it('is a SHA-256 hex digest that never contains the key', async () => {
+    const fingerprint = await credentialFingerprint(FIXTURE_KEY);
+    expect(fingerprint).not.toContain('gsk_');
+    expect(fingerprint).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('is "anon" without a key', () => {
-    expect(credentialFingerprint(undefined)).toBe('anon');
-    expect(credentialFingerprint('')).toBe('anon');
+  it('keeps apart two keys the old 32-bit FNV-1a hash put in one bucket', async () => {
+    /* A real collision under the previous fingerprint, found by a birthday
+       search over key-shaped strings (2^32 buckets fill after about 77k keys).
+       Two such keys shared every cache entry. */
+    const fnv = (text: string) => {
+      let hash = 0x811c9dc5;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+      }
+      return hash;
+    };
+    const [a, b] = ['gsk_07b525d7miv', 'gsk_e7d8d5901f2o'];
+    expect(fnv(a)).toBe(fnv(b));
+    expect(await credentialFingerprint(a)).not.toBe(await credentialFingerprint(b));
+  });
+
+  it('is "anon" without a key', async () => {
+    expect(await credentialFingerprint(undefined)).toBe('anon');
+    expect(await credentialFingerprint('')).toBe('anon');
   });
 });
 

@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type { InterfaceStandard, InterfaceFirearm, ListInterfacesParams, PaginationParams } from '../types';
 
@@ -27,7 +28,7 @@ export class InterfacesResource {
    */
   async getFirearms(id: string, params?: PaginationParams): Promise<PaginatedResponse<InterfaceFirearm>> {
     return this.client.getPaginated<InterfaceFirearm>(
-      `/v1/interfaces/${encodeURIComponent(id)}/firearms`,
+      `/v1/interfaces/${pathSegment(id)}/firearms`,
       params,
     );
   }

@@ -44,7 +44,9 @@ const client = new GunSpec({
 Security defaults you get without asking:
 
 - **A key never goes over plain `http://`** to anything but localhost. `new GunSpec({ apiKey, baseURL: 'http://api.example.com' })` throws `ConfigurationError`; pass `allowInsecure: true` only for a private network you trust.
-- **The key never appears in an error, a log line or `JSON.stringify(client)`**; it is masked (`gsk_...feca`).
+- **The key never appears in an error, a log line, `JSON.stringify(client)` or `console.log(client)`**; it is masked (`gsk_...feca`).
+- **The key stays on the API's own origin.** Redirects are followed by the SDK, not by `fetch`: a hop to another host goes without `X-API-Key` or `Authorization`, a hop from `https` to `http` is refused with `ConnectionError`, and a chain stops after five. A browser hides where a redirect goes, so there a redirecting call under `X-API-Key` throws `ConfigurationError`; use `authScheme: 'bearer'`, whose header the browser removes on a cross-origin hop.
+- **An id of `''`, `.` or `..` throws `InvalidArgumentError`** before any request, because URL parsing would otherwise send the call to a different endpoint.
 - **`Retry-After` is honoured, and bounded.** A 429 or 503 that asks for a wait longer than `maxRetryAfterMs` is surfaced instead of slept through, and a spent daily allowance (`DAILY_CAP_EXCEEDED`) is never retried.
 
 ## Resources
@@ -160,7 +162,7 @@ try {
 }
 ```
 
-401 is a credential problem: a different key can work. 403 is a permission: reissuing a key changes nothing. Subclasses: `BadRequestError` (400), `AuthenticationError` (401), `PermissionError` (403), `NotFoundError` (404), `ConflictError` (409), `PayloadTooLargeError` (413), `RateLimitError` (429), `InternalServerError` (500), `ServiceUnavailableError` (503); `ConnectionError`, `TimeoutError` and `ConfigurationError` never reached the API. `ERROR_REASONS` exports every reason with its summary and action.
+401 is a credential problem: a different key can work. 403 is a permission: reissuing a key changes nothing. Subclasses: `BadRequestError` (400), `AuthenticationError` (401), `PermissionError` (403), `NotFoundError` (404), `ConflictError` (409), `PayloadTooLargeError` (413), `RateLimitError` (429), `InternalServerError` (500), `ServiceUnavailableError` (503); `ConnectionError`, `TimeoutError`, `ConfigurationError` and `InvalidArgumentError` never reached the API. `ERROR_REASONS` exports every reason with its summary and action.
 
 ## Webhooks
 

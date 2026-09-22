@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse } from '../core';
 import type {
   DocsGuide,
@@ -145,6 +146,6 @@ export class DocsResource {
    * ```
    */
   async getGuide(id: string, params: GetDocsGuideParams = {}): Promise<APIResponse<DocsGuide>> {
-    return this.client.get<DocsGuide>(`/v1/docs/guides/${encodeURIComponent(id)}`, params);
+    return this.client.get<DocsGuide>(`/v1/docs/guides/${pathSegment(id)}`, params);
   }
 }

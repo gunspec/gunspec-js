@@ -1,6 +1,6 @@
 {
   "name": "@buun_group/gunspec-sdk",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Official TypeScript SDK for the GunSpec.io firearms specification database API",
   "type": "module",
   "main": "./dist/index.cjs",

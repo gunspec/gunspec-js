@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse, RawResponse } from '../../core';
 import type {
   FirearmAttachments,
@@ -27,7 +28,7 @@ import type {
   ResolveResult,
 } from '../../types';
 
-const slug = (id: string): string => `/v1/firearms/${encodeURIComponent(id)}`;
+const slug = (id: string): string => `/v1/firearms/${pathSegment(id)}`;
 
 // ── Name resolution ──────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ export function getMedia(
   selector: MediaKind | number | string,
   params?: GetFirearmMediaParams,
 ): Promise<APIResponse<FirearmMedia>> {
-  return client.get<FirearmMedia>(`${slug(id)}/media/${encodeURIComponent(String(selector))}`, { ...params, format: 'json' });
+  return client.get<FirearmMedia>(`${slug(id)}/media/${pathSegment(selector)}`, { ...params, format: 'json' });
 }
 
 /** The bytes of one asset, following the redirect to the CDN. Builder. */
@@ -73,7 +74,7 @@ export function downloadMedia(
   selector: MediaKind | number | string,
   params?: GetFirearmMediaParams,
 ): Promise<RawResponse> {
-  return client.getBytes(`${slug(id)}/media/${encodeURIComponent(String(selector))}`, { ...params, format: 'raw' });
+  return client.getBytes(`${slug(id)}/media/${pathSegment(selector)}`, { ...params, format: 'raw' });
 }
 
 /** One image as a base64 data URI, for embedding without a second request. Builder. */
@@ -83,7 +84,7 @@ export function getImageAsset(
   imageId: number | string,
   params?: ImageAssetParams,
 ): Promise<APIResponse<ImageAsset>> {
-  return client.get<ImageAsset>(`${slug(id)}/images/${encodeURIComponent(String(imageId))}`, { ...params, format: 'datauri' });
+  return client.get<ImageAsset>(`${slug(id)}/images/${pathSegment(imageId)}`, { ...params, format: 'datauri' });
 }
 
 /** The 3D model as GLB bytes (`model/gltf-binary`). Builder. */

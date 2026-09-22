@@ -13,6 +13,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   ListVendorOffersParams,
@@ -48,12 +49,12 @@ export class VendorResource {
 
   /** Change one listing. Absent fields are unchanged. */
   async updateOffer(sku: string, input: UpdateOfferInput, scope?: VendorScope): Promise<APIResponse<{ sku: string }>> {
-    return this.client.patch<{ sku: string }>(`/v1/vendor/offers/${encodeURIComponent(sku)}`, input, scope);
+    return this.client.patch<{ sku: string }>(`/v1/vendor/offers/${pathSegment(sku)}`, input, scope);
   }
 
   /** Withdraw one listing. */
   async deleteOffer(sku: string, scope?: VendorScope): Promise<APIResponse<{ removed: boolean }>> {
-    return this.client.delete<{ removed: boolean }>(`/v1/vendor/offers/${encodeURIComponent(sku)}`, scope);
+    return this.client.delete<{ removed: boolean }>(`/v1/vendor/offers/${pathSegment(sku)}`, scope);
   }
 
   /**
@@ -62,7 +63,7 @@ export class VendorResource {
    * check our figure against their own analytics.
    */
   clickUrl(clickId: string, locale?: 'en' | 'de'): string {
-    return this.client.urlFor(`/v1/out/${encodeURIComponent(clickId)}`, locale ? { l: locale } : undefined);
+    return this.client.urlFor(`/v1/out/${pathSegment(clickId)}`, locale ? { l: locale } : undefined);
   }
 
   /**
@@ -72,6 +73,6 @@ export class VendorResource {
    * redirects (browsers do).
    */
   async resolveClick(clickId: string): Promise<string | null> {
-    return this.client.resolveRedirect(`/v1/out/${encodeURIComponent(clickId)}`);
+    return this.client.resolveRedirect(`/v1/out/${pathSegment(clickId)}`);
   }
 }

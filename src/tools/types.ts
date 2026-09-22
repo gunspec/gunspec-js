@@ -56,9 +56,8 @@ export interface ToolDefinition<TArgs extends Record<string, unknown> = Record<s
   /**
    * Arguments that make this tool return real data, with record ids the
    * catalog holds. Shown on the docs as the tool's example call, and what the
-   * nightly MCP verification (`gunspec-mcp/scripts/verify-tools.mjs`) calls each tool
-   * with - so an example that stops resolving fails a run rather than quietly
-   * teaching a call that 404s.
+   * hosted MCP server's nightly check calls each tool with, so an example that
+   * stops resolving fails a run rather than quietly teaching a call that 404s.
    */
   readonly example: TArgs;
   /**

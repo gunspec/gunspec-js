@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse } from '../core';
 import type { PublicCollection } from '../types';
 
@@ -38,6 +39,6 @@ export class CollectionsResource {
    * @throws {NotFoundError} If the id is unknown or the collection is no longer shared.
    */
   async getShared(shareId: string): Promise<APIResponse<PublicCollection>> {
-    return this.client.get<PublicCollection>(`/v1/collections/${encodeURIComponent(shareId)}`);
+    return this.client.get<PublicCollection>(`/v1/collections/${pathSegment(shareId)}`);
   }
 }

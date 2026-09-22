@@ -12,6 +12,7 @@
  */
 
 import { GunSpecError } from './errors/index.js';
+import { loadSubtle } from './subtle.js';
 import type { WebhookEventType } from '../types/webhook-events.js';
 
 /** The delivery headers a receiver should read. */
@@ -71,18 +72,10 @@ export function parseSignatureHeader(header: string | null | undefined): { times
   return { timestamp, signatures };
 }
 
-/**
- * WebCrypto, wherever this runs. Browsers, Workers, Deno, Bun and Node 19+
- * expose it as `globalThis.crypto`; Node 18 has the same implementation but
- * only behind `node:crypto`. The specifier is a variable so a browser bundler
- * never tries to resolve the Node module.
- */
+/** WebCrypto, or a {@link WebhookSignatureError} naming why it is missing. */
 async function subtleCrypto(): Promise<SubtleCrypto> {
-  const global = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto;
-  if (global?.subtle) return global.subtle;
-  const specifier = 'node:crypto';
-  const mod = (await import(/* @vite-ignore */ specifier)) as { webcrypto?: { subtle?: SubtleCrypto } };
-  if (mod.webcrypto?.subtle) return mod.webcrypto.subtle;
+  const subtle = await loadSubtle();
+  if (subtle) return subtle;
   throw new WebhookSignatureError('WebCrypto is not available in this runtime');
 }
 

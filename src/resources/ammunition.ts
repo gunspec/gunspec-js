@@ -7,6 +7,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Ammunition,
@@ -106,7 +107,7 @@ export class AmmunitionResource {
    * ```
    */
   async get(id: string): Promise<APIResponse<Ammunition>> {
-    return this.client.get<Ammunition>(`/v1/ammunition/${encodeURIComponent(id)}`);
+    return this.client.get<Ammunition>(`/v1/ammunition/${pathSegment(id)}`);
   }
 
   /**
@@ -126,7 +127,7 @@ export class AmmunitionResource {
    * ```
    */
   async getBulletSvg(id: string): Promise<string> {
-    return this.client.getText(`/v1/ammunition/${encodeURIComponent(id)}/bullet.svg`);
+    return this.client.getText(`/v1/ammunition/${pathSegment(id)}/bullet.svg`);
   }
 
   /**
@@ -151,7 +152,7 @@ export class AmmunitionResource {
    */
   async ballistics(id: string, params?: AmmunitionBallisticsParams): Promise<APIResponse<BallisticProfile>> {
     return this.client.get<BallisticProfile>(
-      `/v1/ammunition/${encodeURIComponent(id)}/ballistics`,
+      `/v1/ammunition/${pathSegment(id)}/ballistics`,
       params,
     );
   }

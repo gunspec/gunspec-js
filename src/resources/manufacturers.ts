@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Manufacturer,
@@ -107,7 +108,7 @@ export class ManufacturersResource {
    * ```
    */
   async get(id: string): Promise<APIResponse<Manufacturer>> {
-    return this.client.get<Manufacturer>(`/v1/manufacturers/${encodeURIComponent(id)}`);
+    return this.client.get<Manufacturer>(`/v1/manufacturers/${pathSegment(id)}`);
   }
 
   /**
@@ -127,7 +128,7 @@ export class ManufacturersResource {
    */
   async getFirearms(id: string, params?: PaginationParams): Promise<PaginatedResponse<Firearm>> {
     return this.client.getPaginated<Firearm>(
-      `/v1/manufacturers/${encodeURIComponent(id)}/firearms`,
+      `/v1/manufacturers/${pathSegment(id)}/firearms`,
       params,
     );
   }
@@ -149,7 +150,7 @@ export class ManufacturersResource {
    * ```
    */
   async getTimeline(id: string): Promise<APIResponse<ManufacturerTimeline>> {
-    return this.client.get<ManufacturerTimeline>(`/v1/manufacturers/${encodeURIComponent(id)}/timeline`);
+    return this.client.get<ManufacturerTimeline>(`/v1/manufacturers/${pathSegment(id)}/timeline`);
   }
 
   /**
@@ -167,6 +168,6 @@ export class ManufacturersResource {
    * ```
    */
   async getStats(id: string): Promise<APIResponse<ManufacturerStats>> {
-    return this.client.get<ManufacturerStats>(`/v1/manufacturers/${encodeURIComponent(id)}/stats`);
+    return this.client.get<ManufacturerStats>(`/v1/manufacturers/${pathSegment(id)}/stats`);
   }
 }

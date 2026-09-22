@@ -36,6 +36,7 @@ export {
   ConnectionError,
   TimeoutError,
   ConfigurationError,
+  InvalidArgumentError,
   createAPIError,
   parseRetryAfter,
 } from './errors/index.js';
@@ -61,5 +62,6 @@ export {
 export type { WebhookEvent, VerifyOptions } from './webhook-signature.js';
 
 export { serialiseQuery, buildUrl } from './request-builder.js';
+export { pathSegment } from './path.js';
 export { parseRateLimitHeaders, extractRequestId, readCacheHeaders } from './response.js';
 export type { CacheHeaders } from './response.js';

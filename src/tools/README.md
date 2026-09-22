@@ -23,5 +23,5 @@ Governed by: [`../README.md`](../README.md), `apps/assets/public/ai/README.md` (
 - **No schema library.** The JSON Schema is written by hand in the subset `types.ts` allows, so the manifest is serialisable as-is and adds no dependency. The API validates the values; the schema is for the model.
 - **Counts come from `gunspec_stats_summary`.** No description quotes a number of firearms.
 - **Workflows declare `steps` and `maxCalls`.** Every request a workflow makes still counts against the plan; see `workflows/README.md`.
-- **Every tool declares an `example`.** Real ids the catalog holds. The docs print it as the tool's example call and `gunspec-mcp/scripts/verify-tools.mjs` calls the hosted server with it nightly; `tests/unit/tools.test.ts` holds it to the tool's own schema.
+- **Every tool declares an `example`.** Real ids the catalog holds. The docs print it as the tool's example call and the hosted MCP server's nightly check calls each tool with it; `tests/unit/tools.test.ts` holds it to the tool's own schema.
 - **Offers carry `href`.** The offer tools attach the tracked outbound link so a host that renders a listing links through `/v1/out/{clickId}` and the seller sees the visit.

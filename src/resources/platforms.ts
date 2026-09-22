@@ -8,6 +8,7 @@
  * @module
  */
 
+import { pathSegment } from '../core/path';
 import type { HttpClient, APIResponse } from '../core';
 import type { Platform, PlatformDetail } from '../types';
 
@@ -21,6 +22,6 @@ export class PlatformsResource {
 
   /** A platform's interface rows and members. Answers 304. */
   async get(id: string): Promise<APIResponse<PlatformDetail>> {
-    return this.client.get<PlatformDetail>(`/v1/platforms/${encodeURIComponent(id)}`);
+    return this.client.get<PlatformDetail>(`/v1/platforms/${pathSegment(id)}`);
   }
 }

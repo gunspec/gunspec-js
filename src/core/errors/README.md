@@ -6,7 +6,7 @@ The error hierarchy, split by where an error comes from. Everything extends `Gun
 |---|---|
 | `base.ts` | `GunSpecError`, prototype-safe root |
 | `api.ts` | `APIError` and one subclass per documented status (400, 401, 403, 404, 409, 413, 429, 500, 503), each carrying `code`, `reason`, `details`, `retryAfter`, `requestId`, `action` |
-| `transport.ts` | `ConnectionError`, `TimeoutError`, `ConfigurationError`: no API answer was involved |
+| `transport.ts` | `ConnectionError`, `TimeoutError`, `ConfigurationError`, `InvalidArgumentError`: no API answer was involved |
 | `reasons.ts` | `defaultReasonFor(status)`, the API's own fallback table |
 | `factory.ts` | `createAPIError` from a status, body and headers; `parseRetryAfter` |
 | `index.ts` | Barrel; import from `../errors` |

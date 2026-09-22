@@ -31,7 +31,7 @@ Governed by: [`packages/sdk/README.md`](../../README.md), [`../README.md`](../RE
 
 - **`firearms.ts` is over the ~300-line guide on purpose.** It is one concern, the `FirearmsResource` class, and every method is a one-line delegation under its doc comment; the logic already lives in `firearms/`. Splitting the class would cost the reader a single `client.firearms.` completion list.
 
-- **Ids are always `encodeURIComponent`-ed.** Interface standard ids carry colons and slashes.
+- **Ids always go through `pathSegment` from `core/path.ts`.** It encodes the value, since interface standard ids carry colons and slashes, and refuses `''`, `.` and `..`, which URL parsing would otherwise collapse into a different endpoint. Never interpolate an id with `encodeURIComponent` alone.
 - **Params are passed through untouched.** The API validates; a wrong value is a 400 with `details`, not a silent default.
 - **Binary endpoints use `getText` / `getBytes`.** An envelope parse of an SVG is a thrown `GunSpecError` naming the right method.
 

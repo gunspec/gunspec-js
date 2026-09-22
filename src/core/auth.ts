@@ -77,6 +77,16 @@ function readEnvKey(): string | undefined {
   return undefined;
 }
 
+/**
+ * The page's own URL in a browser, which is where a protocol-relative base
+ * takes its scheme from. `undefined` everywhere else, so resolving such a base
+ * outside a page fails as a malformed URL rather than guessing a scheme.
+ */
+function pageHref(): string | undefined {
+  const location = (globalThis as { location?: { href?: unknown } }).location;
+  return typeof location?.href === 'string' ? location.href : undefined;
+}
+
 const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
 // ---------------------------------------------------------------------------
@@ -151,16 +161,25 @@ export function assertTransportSecurity(
   hasApiKey: boolean,
   allowInsecure: boolean,
 ): void {
+  /* A protocol-relative base (`//host`) names another host, so it is absolute
+     for every purpose here and gets the same scheme rules. URL parsing reads
+     `/\host` the same way, so that spelling counts too. */
+  const protocolRelative = /^[/\\]{2}/.test(baseUrl);
+
   /* A relative base (`''`, `'/api'`) means same-origin: the page's own scheme
      carries the request, and a browser will not let a script see or choose
      it. Nothing to check. */
-  if (baseUrl === '' || baseUrl.startsWith('/')) return;
+  if (baseUrl === '' || (baseUrl.startsWith('/') && !protocolRelative)) return;
 
   let url: URL;
   try {
-    url = new URL(baseUrl);
+    url = protocolRelative ? new URL(baseUrl, pageHref()) : new URL(baseUrl);
   } catch {
-    throw new ConfigurationError(`baseURL is not a valid URL: ${JSON.stringify(baseUrl)}`);
+    throw new ConfigurationError(
+      protocolRelative
+        ? `baseURL ${JSON.stringify(baseUrl)} is protocol-relative and there is no page to take a scheme from. Write https:// explicitly.`
+        : `baseURL is not a valid URL: ${JSON.stringify(baseUrl)}`,
+    );
   }
 
   if (url.protocol === 'https:') return;

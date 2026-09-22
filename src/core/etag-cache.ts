@@ -15,6 +15,8 @@
  * @module
  */
 
+import { loadSubtle } from './subtle.js';
+
 /** One held response. */
 export interface CachedEntry {
   /** The `ETag` the API sent with this body. */
@@ -87,21 +89,26 @@ export class MemoryETagStore implements ETagStore {
 }
 
 /**
- * Non-reversible fingerprint of a credential for namespacing cache keys.
+ * Non-reversible fingerprint of a credential for namespacing cache keys: the
+ * SHA-256 of the key, in hex.
  *
- * FNV-1a over the key string. This is not a secret-grade hash and is not
- * meant to be: it only has to keep two keys' entries apart inside one
- * process, and it must be synchronous so the client can build keys without
- * awaiting WebCrypto on every request.
+ * This used to be a 32-bit FNV-1a hash. A store can be shared between
+ * processes and between clients holding different keys, and at 32 bits two
+ * keys can collide, which would let one key be served a body shaped for the
+ * other's plan. SHA-256 keeps every credential's entries apart, and it is
+ * deterministic, so a persistent store still hits across restarts. The client
+ * computes it once and reuses it, so WebCrypto is awaited once per client
+ * rather than per request.
+ *
+ * Resolves to `null` when the runtime has no WebCrypto: the client then
+ * caches nothing for a keyed request rather than fall back to a weaker hash.
  */
-export function credentialFingerprint(apiKey: string | undefined): string {
+export async function credentialFingerprint(apiKey: string | undefined): Promise<string | null> {
   if (!apiKey) return 'anon';
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < apiKey.length; i++) {
-    hash ^= apiKey.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash.toString(16).padStart(8, '0');
+  const subtle = await loadSubtle();
+  if (!subtle) return null;
+  const digest = await subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /** Build the store key for one GET. */
