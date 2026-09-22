@@ -1,0 +1,84 @@
+{
+  "name": "@buun_group/gunspec-sdk",
+  "version": "0.13.0",
+  "description": "Official TypeScript SDK for the GunSpec.io firearms specification database API",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./tools": {
+      "import": {
+        "types": "./dist/tools/index.d.ts",
+        "default": "./dist/tools/index.js"
+      },
+      "require": {
+        "types": "./dist/tools/index.d.cts",
+        "default": "./dist/tools/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
+    "version": "node scripts/sync-version.mjs",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "gunspec",
+    "firearms",
+    "api",
+    "sdk",
+    "typescript",
+    "specifications",
+    "database",
+    "mcp",
+    "agent-tools"
+  ],
+  "author": "BUUN GROUP <hello@buungroup.com>",
+  "license": "MIT",
+  "homepage": "https://gunspec.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gunspec/gunspec-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gunspec/gunspec-js/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "openapi-typescript": "^7",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
