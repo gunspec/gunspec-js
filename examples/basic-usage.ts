@@ -115,7 +115,13 @@ async function main() {
     if (error instanceof NotFoundError) {
       console.log(`Not found (request ID: ${error.requestId})`)
     } else if (error instanceof RateLimitError) {
-      console.log(`Rate limited - retry after ${error.retryAfter}s`)
+      if (error.isDailyCap) {
+        console.log(`Daily allowance spent; it resets at ${error.dailyReset?.toISOString() ?? 'midnight UTC'}`)
+      } else if (error.isMonthlyCap) {
+        console.log(`Monthly allowance spent; it resets at ${error.monthlyReset?.toISOString() ?? 'midnight UTC on the 1st'}`)
+      } else {
+        console.log(`Rate limited, retry after ${error.retryAfter}s`)
+      }
     } else {
       throw error
     }

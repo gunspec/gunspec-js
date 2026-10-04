@@ -376,10 +376,13 @@ async function main() {
 
   } catch (error) {
     if (error instanceof RateLimitError) {
-      process.stderr.write(
-        `\nRate limited! Retry after ${error.retryAfter}s.\n` +
-        `Consider upgrading your API tier for higher limits.\n`
-      )
+      /* A spent day or month does not clear by waiting a minute: say when it does. */
+      const wait = error.isDailyCap
+        ? `Daily allowance spent. It resets at ${error.dailyReset?.toISOString() ?? 'midnight UTC'}; stop calling until then.`
+        : error.isMonthlyCap
+          ? `Monthly allowance spent. It resets at ${error.monthlyReset?.toISOString() ?? 'midnight UTC on the 1st'}; stop calling until then.`
+          : `Rate limited! Retry after ${error.retryAfter}s.`
+      process.stderr.write(`\n${wait}\nConsider upgrading your API tier for higher limits.\n`)
       process.exit(1)
     }
     throw error

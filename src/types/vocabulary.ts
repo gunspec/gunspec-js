@@ -200,6 +200,18 @@ export const MEDIA_KINDS = [
 
 export type MediaKind = (typeof MEDIA_KINDS)[number]
 
+/** What kind of asset a media listing item is: a stored kind, or `feature_icon`, the drawn icon for one of the firearm's features. */
+export const MEDIA_ITEM_KINDS = [
+  'silhouette',
+  'render',
+  'photo',
+  'schematic',
+  'model',
+  'feature_icon',
+] as const
+
+export type MediaItemKind = (typeof MEDIA_ITEM_KINDS)[number]
+
 /** The storage label on `FirearmImage.type`, predating `kind`: `svg` is `silhouette`, `3d_model` is `model`, and `gallery` is the default an upload lands on. Branch on `kind`. */
 export const IMAGE_TYPES = [
   'svg',
@@ -351,6 +363,7 @@ export const SOURCE_KINDS = [
   'manufacturer',
   'standards_body',
   'government',
+  'peer_reviewed',
   'reference',
   'aggregator',
   'press',

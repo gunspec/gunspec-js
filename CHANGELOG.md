@@ -2,6 +2,63 @@
 
 All notable changes to `@buun_group/gunspec-sdk`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package follows [Semantic Versioning](https://semver.org/).
 
+## 0.14.0 (2026-10-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* firearm images default to the full-size WebP
+
+### Added
+
+* a completed-work page and each method's findings, from closed and open tasks (2d24be3)
+* a contract operation can say what it asks (a9b995a)
+* a fitment suite that asks the live API what fits, published nightly (1431420)
+* a statistical anomaly suite asks for verification of figures unusual among comparable guns (5b1e655)
+* abuse holds, monthly limits, edge blocking, Google reports and the staff pages for them (680c46f)
+* an integrity check that finds invented data, and a fixer that removes it (e1306bc)
+* blog redesign, reader comments and bylines, and the site's scrambled photo route (1367dbd)
+* by-feature rows give each feature's icon as its CDN URL (cfe3eed)
+* by-feature rows name the icon for each of their features (015e337)
+* data checks that publish what is wrong with the catalogue and what was fixed (679c9c6)
+* endpoint credits, staff leaderboard, and social cards drawn ahead of time (b7a3117)
+* every data task has a number, and a value under review says so on the website (7c4eabf)
+* feature icons in the API, on firearm records and as a catalogue (24c16ee)
+* firearm figures are compared with a second, independent source (eabd1df)
+* firearm images default to the full-size WebP (b961a4d)
+* GunSpec Research, papers on the catalogue with a site, an editor and Quill (d2808f9)
+* load-carriage endpoint, the metabolic cost of marching with each firearm (280f8f3)
+* mass checks read sourced densities, and the check pages lead with their method (ed1e425)
+* plausibility and cartridge checks, in the docs, the laptop run and the workflow (4ddeae4)
+* question-led studies with open-access literature, live study runs, and peer_reviewed sources (90edb81)
+* Quill, the agent that drafts blog posts from the catalogue's figures (d0344e8)
+* recoil, point-blank and ammo-load analyses, and agent runs as a page with a timeline and a chat (db7a61b)
+* record pages show each source's kind, rank and registry standing (919b3de)
+* records publish how far they are backed and every check they went through (a239116)
+* records say when they cite their own maker, and the source list grows from use (6962386)
+* redback verifies a firearm's figures against its own maker's page (4fce474)
+* review marks say how a value breaks its check, and trajectory points show their working (1386430)
+* scoped catalogue search, suggestions, home contents strip, generated samples (ecc5bff)
+* **sdk:** types for the new search filters, task numbers and research inputs (ad8c6f2)
+* sources ranked with signal bars and kind icons, served to Redback at /v1/data/sources (282cad2)
+* staff reaches the API through StaffEntrypoint; blog and staff drop the secret (7af4ea8)
+* task research, decisions, search and Redback activity in the API (a86d6dc)
+* the catalogue repository and Redback's queue sync both ways through a GitHub App (cce0bb8)
+* the reference-photo finder searches more providers and counts each key's allowance (c091531)
+
+
+### Fixed
+
+* a head-to-head names no winner for a figure only one firearm states (06d07be)
+* accepted verifications are read from a public list, not with a staff token (ede3d7d)
+* catch contradicting measurements and stop compare handing ties to the first firearm (acb4409)
+* describe the last undescribed fields in the spec (84722b6)
+* SDK types carry the spec's provenance, routes, author and verified fields (7a075cc)
+* spec, SDK and docs examples name records that exist (5e15d91)
+* task and finding lists carry the standard pagination block (6277eea)
+* the site update example names a post that is published (49eb953)
+* trajectories read drop from the line of sight, through one standard atmosphere (b38b24d)
+
 ## 0.13.1 (2026-09-22)
 
 

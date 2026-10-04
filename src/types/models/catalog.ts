@@ -258,6 +258,20 @@ export interface Category {
   description?: string | null;
 }
 
+// ── Feature icons ──────────────────────────────────────────────────────────
+
+/**
+ * A drawn feature icon, from `GET /v1/features/icons`.
+ */
+export interface FeatureIcon {
+  /** The icon's file name without extension, e.g. `5r_rifling`. */
+  readonly name: string;
+  /** The name as a reader would write it, e.g. `5R Rifling`. */
+  label: string;
+  /** The drawing on the assets CDN, a public WebP image. */
+  iconUrl: string;
+}
+
 // ── Countries ──────────────────────────────────────────────────────────────
 
 /**

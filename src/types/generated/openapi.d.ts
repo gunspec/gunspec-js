@@ -73,7 +73,7 @@ export interface paths {
         };
         /**
          * Full-text search
-         * @description Searches firearm names and descriptions using SQLite FTS5. Results are ordered by relevance.
+         * @description Searches firearm names and descriptions using SQLite FTS5. Results are ordered by relevance. The optional filters narrow the matches the way they narrow `/v1/firearms`, and combine with AND; the total counts only the matches they keep.
          *
          *     **Requires Builder tier or higher.**
          */
@@ -217,7 +217,7 @@ export interface paths {
         };
         /**
          * Get image asset
-         * @description Returns the image bytes for one gallery entry. Defaults to the raw file with an immutable cache header; `format=datauri` returns a base64 data URI that drops straight into an <img src> with no second request. Images we link rather than host (external sources, asset-CDN paths) answer with a 302 to their location. Listing images and their credits is explorer-tier via /v1/firearms/{id}/images; the bytes are builder-tier, like the silhouette.
+         * @description Returns the image bytes for one gallery entry. Defaults to the full-size WebP (`variant=display`) with an immutable cache header; `format=datauri` returns a base64 data URI that drops straight into an <img src> with no second request. Images we link rather than host (external sources, asset-CDN paths) answer with a 302 to their location. Listing images and their credits is explorer-tier via /v1/firearms/{id}/images; the bytes are builder-tier, like the silhouette.
          *
          *     **Requires Builder tier or higher.**
          */
@@ -266,6 +266,8 @@ export interface paths {
          * @description One resource for every kind of asset a firearm has, from line-art silhouette and generated render to photograph, schematic and 3D model, returned in a single shape.
          *
          *     Replaces having to learn `/images`, `/silhouette` and `/schematics` separately; those remain available and unchanged. Every `url` is absolute and directly fetchable, and every item carries the `credit` block (source, author, licence) needed to reuse the asset legally.
+         *
+         *     Also lists a `feature_icon` for each of the firearm's features that has a drawn icon, in the order of `features`, with `feature` naming the tag it illustrates. The whole icon set is at `/v1/features/icons`.
          *
          *     Available on every plan. Requires an API key; Explorer keys receive a reduced field set.
          */
@@ -429,7 +431,7 @@ export interface paths {
          * Load a firearm with an ammunition type
          * @description Returns the full ballistic profile for a firearm chambered with a given load: muzzle velocity and energy, effective range, terminal indices, and the trajectory sampled from the muzzle out to 1000 m.
          *
-         *     Each trajectory point carries velocity, energy, drop, time of flight, Mach number, momentum, Taylor Knock-Out factor and energy density, so the whole drop table can be rendered from one call.
+         *     Each trajectory point carries velocity, energy, drop from the bore, path from the line of sight for the answer's `zeroing`, time of flight, Mach number, momentum, Taylor Knock-Out factor and energy density, so the whole drop table can be rendered from one call. The trajectory is flown through the ICAO standard atmosphere at sea level.
          *
          *     When the firearm has no recorded barrel length, or no load can be resolved for its primary caliber, the response is still `200` and carries an `error` string in place of the computed blocks.
          *
@@ -708,6 +710,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/features/icons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List feature icons
+         * @description Every drawn feature icon, for building a legend or an icon set. A firearm's own come as `feature_icon` items in `/v1/firearms/{id}/media`. Each is a WebP on the assets CDN that loads without a key. Needs an API key on every plan, the free one included, and shows the total on every plan.
+         *
+         *     Available on every plan. Requires an API key; Explorer keys receive a reduced field set.
+         */
+        get: operations["listFeatureIcons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/firearms/by-feature": {
         parameters: {
             query?: never;
@@ -717,7 +741,7 @@ export interface paths {
         };
         /**
          * Filter by feature
-         * @description Returns firearms carrying a given feature slug, e.g. `threaded-barrel` or `m-lok`.
+         * @description Returns firearms carrying a given feature, e.g. `threaded barrel`. Each row names the drawn icon for every one of its features (`featureIcons`), so a list of matches can show the pictures without a second call per firearm.
          *
          *     **Requires Builder tier or higher.**
          */
@@ -1223,7 +1247,7 @@ export interface paths {
         };
         /**
          * Compute a ballistic table
-         * @description Computes velocity, energy, and drop at the requested distances for one load, optionally adjusted for a specific barrel length.
+         * @description Computes velocity, energy, drop from the bore and the path from the line of sight at the requested distances for one load, optionally adjusted for a specific barrel length and sighting. Flown through the ICAO standard atmosphere at sea level with the G1 or G7 drag table its ballistic coefficient is stated against.
          *
          *     **Requires Builder tier or higher.**
          */
@@ -1699,11 +1723,121 @@ export interface paths {
         };
         /**
          * Count data tasks per finding
-         * @description How many remediation tasks each finding has, by state, for a page that lists the checks and wants a marker on each. A finding is a check id, or the field for a gap. Keyless, on the same reasoning as the task list; counts reveal nothing a task does not.
+         * @description How many remediation tasks each finding has, by state, for a page that lists the checks and wants a marker on each, and how many closed over the last week, month and all time by who closed them. A finding is a check id, or the field for a gap. Keyless, on the same reasoning as the task list; counts reveal nothing a task does not.
          *
          *     No API key required.
          */
         get: operations["summarizeDataTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List accepted verifications
+         * @description Every firearm figure a person has accepted as confirmed by the firearm's own manufacturer page, newest first. The data agent reads the maker page, a figure is kept only when the sentence it came from is on the page and the value agrees within the published tolerance, and nothing counts until a person accepts it. Each entry names the confirmed fields with the maker's sentence and the page read. The same results appear on each record as `provenance.checks`, and the record lists the fields in `verifiedFields` once they are written into the catalogue.
+         *
+         *     No API key required.
+         */
+        get: operations["listDataVerifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List cited sources
+         * @description Every site the catalogue cites, strongest first: its kind and place in the source hierarchy, the basis for that kind, and how many records cite it. A maker's own site, a standards body or a government is an `authority`; every other kind a person has classed from the site's own pages is `classified`; the rest are `unclassified` and count as the weakest kind until someone classes them. Classed with the same rules as every record's `provenance.sourceKinds`, so the two never disagree.
+         *
+         *     No API key required.
+         */
+        get: operations["listDataSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/sources/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarise cited sources
+         * @description The registry totals, and every kind in the source hierarchy with its rank, what it means, example sites, and how many sites and citations of that kind the catalogue holds.
+         *
+         *     No API key required.
+         */
+        get: operations["getDataSourcesSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/sources/{host}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one cited source
+         * @description One site's standing: its kind, rank, basis, tier and citations, and the evidence it was classed on. Takes a host or a page URL (URL-encoded); a subdomain resolves to the domain the registry knows, and an archived copy to the site it captured.
+         *
+         *     No API key required.
+         */
+        get: operations["getDataSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/outcomes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List accepted results on catalogue tasks
+         * @description Every result on a task raised by the catalogue's own checks that a person has accepted, newest first. A found value comes with the page's own words for it and the page read; a value looked for and not found, and a finding judged right as it stands, come with the agent's reasoning. It is what the catalogue sync reads to write each result into the record, its ledger and its task file, so it names nothing a person has not accepted and never the reviewer.
+         *
+         *     No API key required.
+         */
+        get: operations["listDataOutcomes"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1721,7 +1855,7 @@ export interface paths {
         };
         /**
          * Get one data remediation task
-         * @description Where one task has got to, for a reader following a finding. The same narrow view the list returns: no payload, no claimant, no proposal.
+         * @description Where one task has got to, for a reader following a finding. The same narrow view the list returns: no claimant, and never an unreviewed proposal. With `include=research`, what the check found and, once a person accepted it, what was decided: the value, the quotes it rests on and the reasoning.
          *
          *     No API key required.
          */
@@ -2117,7 +2251,9 @@ export interface paths {
         };
         /**
          * Get your API usage
-         * @description Returns request counts for your key against your plan allowance, and how many of them came through the hosted MCP server against its lower daily limit. Defaults to the current billing month; pass `days` for a trailing window instead.
+         * @description Returns request counts for your key against your plan allowance, what is left of today's daily limit and when it resets, and how many requests came through the hosted MCP server against its lower daily limit. Defaults to the current billing month; pass `days` for a trailing window instead.
+         *
+         *     You do not need this call to pace yourself: every `/v1` response already carries `X-Daily-Limit`, `X-Daily-Remaining` and `X-Daily-Reset` for the key that made it, and this call is itself a request that counts. Use it to reconcile, and to see every key at once. `daily` is the limit that is enforced, counted per key; `currentMonth` is a running total for the billing period.
          *
          *     Requires an API key belonging to a user account. Acts on the calling account's own data.
          */
@@ -2540,6 +2676,28 @@ export interface paths {
          *     No API key required.
          */
         get: operations["getContractBadge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/contract/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One check's findings from the latest run
+         * @description Every finding one check made in the latest run of a surface, a page at a time. A run carries a sample of twenty per check; the data check suites publish every finding as well, and this is where the whole list is read: one line per finding, the record first. For a run published before findings were stored, the sample is returned instead, and `published` says how many that is.
+         *
+         *     No API key required.
+         */
+        get: operations["listContractFindings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3090,6 +3248,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/firearms/load-carriage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare the cost of marching with each firearm
+         * @description Returns the metabolic cost of a foot march carrying each of up to 5 firearms, by a published load-carriage equation, from the masses the catalogue records.
+         *
+         *     Each firearm is carried empty plus `magazines` full magazines, plus the `attachments` named, on top of `kit_kg` of other equipment. A full magazine is the firearm's loaded weight less its empty weight: two figures the record states, never an estimate. A firearm missing one of them is answered with an `error` in place of its cost, and the others are still compared.
+         *
+         *     The default model is the US Army Load Carriage Decision Aid backpacking equation (Looney et al. 2022) with its graded-walking term, which covers level, uphill and downhill marching. `model=pandolf` gives the Pandolf equation (1977) for comparison with the older literature, level and uphill only. Each answer carries the equation, its constants' sources and the range it was fitted on, and warns where an input lies outside that range.
+         *
+         *     Every input has a default, and `march.defaulted` names the ones the answer assumed. The result is energy expenditure only: neither model predicts fatigue, marksmanship or time to exhaustion.
+         *
+         *     **Requires Builder tier or higher.**
+         */
+        get: operations["compareLoadCarriage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/firearms/recoil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare the free recoil of each firearm
+         * @description Returns the free recoil of each of up to 5 firearms firing a load: the velocity the firearm is pushed back at, the energy it takes and the impulse, by the free recoil formula the Sporting Arms and Ammunition Manufacturers' Institute (SAAMI) publishes.
+         *
+         *     The firearm's mass is its recorded loaded weight (`mass=empty` for its empty weight; the empty weight is used, with a warning, where no loaded weight is recorded). The bullet is the load's record, and its muzzle velocity is the one computed for this firearm's own barrel, as `/v1/firearms/{id}/calculate` computes it. With no `ammo_id`, each firearm fires the load `/v1/firearms/{id}/load` fires it with.
+         *
+         *     The catalogue records no powder charge. Without `powder_charge_g`, only the bullet's momentum is counted, and since the powder gas leaves the muzzle the same way, the real free recoil is larger: every figure is then a lower bound, and `recoil.lowerBound` says so. With a charge, the gas is added at SAAMI's gas velocity factor for the class of firearm (1.75 times the muzzle velocity for high powered rifles, 1.50 for handguns and average shotguns, 1.25 for long-barrelled shotguns). A submachine gun or personal defence weapon is in none of SAAMI's classes: name one with `gas_class` to count its gas.
+         *
+         *     Free recoil is the reaction of a firearm with nothing holding it. It is not felt recoil, and SAAMI's formula does not count a muzzle brake or suppressor redirecting the gas.
+         *
+         *     **Requires Builder tier or higher.**
+         */
+        get: operations["compareRecoil"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/firearms/point-blank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare the point-blank and supersonic range of each firearm
+         * @description Returns, for each of up to 5 firearms firing a load, its maximum point-blank range: the furthest distance at which the bullet stays within half the target's diameter of the line of sight all the way from the muzzle, at the zero that makes that distance longest. With it come that zero (the far zero), the near zero where the bullet first rises through the line of sight, the peak, the time of flight and the velocity at the range, and the supersonic range.
+         *
+         *     The trajectory is the one `/v1/firearms/{id}/load` flies: the same load, the firearm's own barrel and the same solver, in the ICAO standard atmosphere at sea level (15 °C, 101.325 kPa). It is flown at every metre, so every distance is to the metre. With no `ammo_id`, each firearm fires the load its ballistic profile uses; the sights sit at the height that profile assumes for the firearm's category unless `sight_height_mm` says otherwise.
+         *
+         *     Every input has a default, and `target.defaulted` names the ones the answer assumed. Each trajectory is flown to 2500 m; a range that reaches it is at least that far, and the answer says so.
+         *
+         *     **Requires Builder tier or higher.**
+         */
+        get: operations["comparePointBlank"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/firearms/ammo-load": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare how much ammunition each firearm carries per kilogram
+         * @description Returns, for each of up to 5 firearms, its ammunition as a weight, in two kinds of figure that are never mixed.
+         *
+         *     **Derived** from the catalogue: a full magazine is the firearm's loaded weight less its empty weight, as load carriage takes it, and from it and the magazine's capacity come the rounds carried per kilogram of full magazines and how many full magazines and rounds fit `budget_kg`. Only a detachable magazine comes out whole, so a firearm with a fixed magazine, a tube or a clip is answered without these, with a warning.
+         *
+         *     **Estimated** by the fitted cartridge-mass model: a basic load of `rounds` rounds (default `magazines` times the capacity) and of `magazines` full magazines, from the bullet (the load named by `ammo_id`, or the cartridge's typical bullet) and the case's dimensions. The model was fitted to four cartridges whose mass a source states and misses none by more than 8.5%; every estimate carries that error as a range, and is labelled `estimated`. An estimate is never catalogue data.
+         *
+         *     The model also checks each derived magazine: one lighter than its rounds alone are estimated to weigh, allowing the model's whole error, means one of the record's two weights is wrong, and the answer says so beside the figures derived from it.
+         *
+         *     **Requires Builder tier or higher.**
+         */
+        get: operations["compareAmmoLoad"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List research papers
+         * @description Returns the research papers GunSpec has published, newest first: technical reports built on the catalogue and the published methods.
+         *
+         *     Available on every plan. Requires an API key; Explorer keys receive a reduced field set.
+         */
+        get: operations["listResearchPapers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/papers/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a research paper
+         * @description Returns one published research paper, including its full body, its authors, its review status and the API calls that reproduce its figures.
+         *
+         *     Available on every plan. Requires an API key; Explorer keys receive a reduced field set.
+         */
+        get: operations["getResearchPaper"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3246,6 +3558,44 @@ export interface components {
              * @example null
              */
             adapterId?: string | null;
+        };
+        /** @description One way an attachment goes on: directly, or through one adapter. Routes are ordered best first: direct before an adapter, over the receiver before forward of it for a sight, then by confidence. The top-level fields of the fit are the first route. */
+        FitRoute: {
+            /**
+             * @description How it fits: `direct` on the firearm own interface, `adapter` through the part named in `adapter`, or `curated` from an override on the attachment. Null when it does not fit.
+             * @example adapter
+             * @enum {string}
+             */
+            fitType?: "direct" | "adapter";
+            /**
+             * @description The adapter this route goes through, or null when the attachment fits directly.
+             * @example {
+             *       "id": "rs-regulate-ak-303m",
+             *       "name": "RS Regulate AK-303M"
+             *     }
+             */
+            adapter?: components["schemas"]["AdapterRef"] | null;
+            /** @description The interfaces that satisfied the attachment requirements, with where each came from. */
+            via?: components["schemas"]["FitVia"][];
+            /**
+             * @description How well evidenced this row is, 0 to 1. **A minimum, not an average**: an inferred row caps every fit computed through it, and `min_confidence` on the endpoint hides rows below a threshold.
+             * @example 1
+             */
+            confidence?: number;
+            /** @example inherited:platform */
+            source?: components["schemas"]["FitSource"];
+            /**
+             * @description How well the adapter's own record is sourced, 0 to 1, when the route goes through one. Beside `confidence`, which is the evidence for the mount points, rather than folded into it. Null for a direct route.
+             * @example 0.95
+             */
+            adapterConfidence?: number | null;
+            /**
+             * @description What a person fitting it should know that does not stop it fitting: a sight mounted forward on a handguard rail, a scope that needs rings the catalogue does not list, a drop-in handguard cut for one gas system, receivers the maker says it does not fit.
+             * @example [
+             *       "Needs 30 mm rings, not listed here"
+             *     ]
+             */
+            caveats?: string[];
         };
         AdapterRef: {
             /**
@@ -3427,6 +3777,13 @@ export interface components {
              * @example null
              */
             blockedBy?: string | null;
+            /** @description Every way it goes on, best first; the fields above are the first. Empty for a curated override, a universal fit and a row that does not fit. */
+            routes?: components["schemas"]["FitRoute"][];
+            /**
+             * @description The best route's caveats.
+             * @example []
+             */
+            caveats?: string[];
         };
         /** @description One catalogued attachment, as the list returns it. */
         Attachment: components["schemas"]["AttachmentBase"] & {
@@ -3450,8 +3807,14 @@ export interface components {
             yearIntroduced?: number | null;
             /** @description Requirement groups. One standard from each group must be present on the firearm. Empty means universal fit. */
             requires?: components["schemas"]["StandardRef"][][];
-            /** @description Standards this adds to the firearm once fitted, resolved to `{ id, name, kind }`. */
-            provides?: components["schemas"]["StandardRef"][];
+            /** @description Standards this adds to the firearm once fitted, resolved to `{ id, name, kind, position }`. */
+            provides?: (components["schemas"]["StandardRef"] & {
+                /**
+                 * @description Where on the firearm the standard sits once fitted, when that is not where this part mounts: a side mount clamps to the side rail and puts its Picatinny rail over the receiver. Null means where this part mounts.
+                 * @example top
+                 */
+                position?: string | null;
+            })[];
             /** @description What this part is rated for, where being rated matters, meaning suppressors and magazines. The caliber, bore and minimum-barrel gate is checked against these and is never bridged or inferred. */
             caliberRatings?: {
                 /**
@@ -3509,6 +3872,11 @@ export interface components {
          */
         MediaKind: "silhouette" | "render" | "photo" | "schematic" | "model";
         /**
+         * @description What kind of asset a media listing item is: a stored kind, or `feature_icon`, the drawn icon for one of the firearm's features.
+         * @enum {string}
+         */
+        MediaItemKind: "silhouette" | "render" | "photo" | "schematic" | "model" | "feature_icon";
+        /**
          * @deprecated
          * @description The storage label on `FirearmImage.type`, predating `kind`: `svg` is `silhouette`, `3d_model` is `model`, and `gallery` is the default an upload lands on. Branch on `kind`.
          * @enum {string}
@@ -3558,7 +3926,7 @@ export interface components {
          * @description What kind of page a cited source is, strongest first: the maker's own page, a standards body (SAAMI, C.I.P.), a government or military document, an independent reference work, a specification aggregator, the press, a retailer or auction listing, a community site, or an unclassified page. Weigh a figure by the best kind behind it, never by how many pages were cited.
          * @enum {string}
          */
-        SourceKind: "manufacturer" | "standards_body" | "government" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+        SourceKind: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
         /**
          * @description The weakest evidence behind a fit. A retailer or engineering consumer should treat `inferred` as unverified; `min_confidence` hides it.
          * @enum {string}
@@ -3623,7 +3991,12 @@ export interface components {
              * @example [
              *       {
              *         "url": "https://www.glock.com/en/products/pistols/g17-gen5",
-             *         "kind": "manufacturer"
+             *         "kind": "manufacturer",
+             *         "archivedFrom": null,
+             *         "rank": 0,
+             *         "tier": "authority",
+             *         "basis": "declared",
+             *         "evidence": null
              *       }
              *     ]
              */
@@ -3631,12 +4004,151 @@ export interface components {
                 /** @description Absolute, directly fetchable URL. */
                 url: string;
                 kind: components["schemas"]["SourceKind"];
+                /** @description The original address when `url` is a Wayback Machine capture of it. A cited page that no longer answers is replaced by its last capture that answered 200, so the citation still shows what its author read; `kind` is the original page's. */
+                archivedFrom: string | null;
+                /**
+                 * @description The kind's place in the source hierarchy: 0 is the maker, the strongest; higher is weaker.
+                 * @example 0
+                 */
+                rank: number;
+                /**
+                 * @description Where the site stands in the source registry (`/v1/data/sources`): an authority (the maker, a standards body, a government), a classified site, or one not yet classed.
+                 * @example authority
+                 * @enum {string}
+                 */
+                tier: "authority" | "classified" | "unclassified";
+                /**
+                 * @description What the class rests on: classed by a person, a catalogued maker's own site, a .gov or .mil domain, or nothing yet.
+                 * @example declared
+                 * @enum {string}
+                 */
+                basis: "declared" | "maker" | "rule" | "unclassified";
+                /**
+                 * @description The words the site was classed on, where a person recorded them.
+                 * @example null
+                 */
+                evidence: string | null;
             }[];
             /**
              * @description The strongest kind among the citations, or null when nothing is cited. `manufacturer` or `standards_body` means a figure can be checked against an authority; `retailer` or `community` alone means the record is still supported by copies of copies.
              * @example manufacturer
              */
             bestSourceKind: components["schemas"]["SourceKind"] | null;
+            /**
+             * @description The first cited page on the record's own manufacturer's website, or null when it cites none. A page on another maker's site does not count. Cited from the maker is not the same as checked against it: `verifiedFields` names the figures that were read against a source.
+             * @example https://www.glock.com/en/products/pistols/g17-gen5
+             */
+            makerSource: string | null;
+            /**
+             * @description How far the record's figures are backed, strongest first, for a badge: `verified` when at least one figure was read against a source (`verifiedFields`), `maker` when it cites a page on its own manufacturer's site (`makerSource`), `authority` when it cites a maker, standards body or government page, `secondary` when it cites only press, retailers, references or forums, `none` when it cites nothing. Derived from the fields beside it.
+             * @example maker
+             * @enum {string}
+             */
+            evidence: "verified" | "maker" | "authority" | "secondary" | "none";
+            /** @description The checks the record has been through, on a single record's response only: every task the data agent (Redback) or a person was given about it, what each proposed, the pages it read, and whether a person accepted it. Nothing an agent proposes reaches the record until a person accepts it, so this is the trail behind `verifiedFields`. Who reviewed is not published; an agent's instance name is. */
+            checks?: {
+                /**
+                 * @description Every task ever raised on the record, answered or not.
+                 * @example 3
+                 */
+                raised: number;
+                /**
+                 * @description Tasks still waiting to be worked.
+                 * @example 0
+                 */
+                open: number;
+                /** @description The latest twenty, newest first. */
+                history: {
+                    /**
+                     * @description The task id, stable across runs; the same id `/v1/data/tasks/{taskKey}` answers for.
+                     * @example verify:firearms:glock-g17-gen5
+                     */
+                    task: string;
+                    /**
+                     * @description The task's number; `/v1/data/tasks/{number}` loads it as its key does.
+                     * @example 1204
+                     */
+                    number: number | null;
+                    /**
+                     * @description The check that raised it, where one did.
+                     * @example quality:firearm-weight-fits-its-size
+                     */
+                    check: string | null;
+                    /**
+                     * @description `verify` reads the record against its maker's page, `gap` researches an empty field, `contradiction` judges fields that disagree, `vocabulary` a value outside a list.
+                     * @example verify
+                     */
+                    kind: string;
+                    /**
+                     * @description `redback` when the agent worked it, `staff` when a person did, null when nobody has.
+                     * @example redback
+                     */
+                    agent: string | null;
+                    /**
+                     * @description The agent instance that worked it; null for a person.
+                     * @example redback-046535
+                     */
+                    worker: string | null;
+                    /**
+                     * @description `resolved` (a proposal was filed), `unverifiable` (nothing could be established; retried after a cooldown), `not_a_fault`, or open.
+                     * @example resolved
+                     */
+                    status: string;
+                    /**
+                     * @description When the task was answered; null while it is open.
+                     * @example 2026-09-25 07:42:39
+                     */
+                    decidedAt: string | null;
+                    /**
+                     * @description What it proposed, in its own words; null while it is open.
+                     * @example Read https://us.glock.com/en/pistols/g17-gen5: agrees on barrel_length, weight.
+                     */
+                    proposed: string | null;
+                    /**
+                     * @description Per-field completeness, keyed by column name.
+                     * @example [
+                     *       "barrel_length_mm",
+                     *       "weight_empty_g"
+                     *     ]
+                     */
+                    fields: string[];
+                    /**
+                     * @description The pages it read and quoted.
+                     * @example [
+                     *       "https://us.glock.com/en/pistols/g17-gen5"
+                     *     ]
+                     */
+                    sources: string[];
+                    /** @description A person's decision on the proposal; null until reviewed. */
+                    review: {
+                        /**
+                         * @description Whether a person accepted the proposal.
+                         * @enum {string}
+                         */
+                        decision?: "accepted" | "rejected";
+                        /** @description When they decided. */
+                        at?: string | null;
+                    } | null;
+                    /** @description What the check found, where a check raised the task: its own line for this record and the figures it measured, so a reader sees how the value breaks the method. The same the public task board serves with `include=research`. */
+                    finding: {
+                        /**
+                         * @description The check's line for this record.
+                         * @example 2.22 g/cm3 against a submachine-gun / carbon-steel median of 0.64; check the weight and the dimensions
+                         */
+                        why: string | null;
+                        /**
+                         * @description The figures the check measured.
+                         * @example {
+                         *       "apparentDensity": 2.218,
+                         *       "categoryMedian": 0.635
+                         *     }
+                         */
+                        evidence: {
+                            [key: string]: unknown;
+                        } | null;
+                    } | null;
+                }[];
+            };
             /**
              * @description The 0 to 1 score set from what was actually sourced, never raised by hand. See the confidence bands in the docs.
              * @example 0.95
@@ -3689,7 +4201,7 @@ export interface components {
                  * @example RESOURCE_NOT_FOUND
                  * @enum {string}
                  */
-                reason: "INVALID_PARAMETER" | "INVALID_JSON" | "INVALID_REQUEST" | "AUTH_REQUIRED" | "KEY_MISSING" | "KEY_INVALID" | "KEY_DISABLED" | "KEY_EXPIRED" | "SIGN_IN_REQUIRED" | "SESSION_EXPIRED" | "ACCOUNT_NOT_FOUND" | "LINK_EXPIRED" | "PROXY_CREDENTIAL_INVALID" | "PLAN_REQUIRED" | "ACCOUNT_SUSPENDED" | "KEY_NOT_LINKED_TO_ACCOUNT" | "KEY_MCP_ONLY" | "KEY_NOT_LINKED_TO_SHOP" | "SHOP_UNDER_REVIEW" | "NOT_OWNER" | "PURCHASE_REQUIRED" | "LIMIT_REACHED" | "PAGINATION_DEPTH_EXCEEDED" | "ADMIN_REQUIRED" | "READ_ONLY_SESSION" | "ORIGIN_BLOCKED" | "CLIENT_BLOCKED" | "ACTION_NOT_ALLOWED" | "RESOURCE_NOT_FOUND" | "ROUTE_NOT_FOUND" | "CONFLICT" | "PAYLOAD_TOO_LARGE" | "RATE_LIMITED" | "DAILY_CAP_EXCEEDED" | "MCP_DAILY_CAP_EXCEEDED" | "PAGINATION_BURST" | "REPORT_RATE_LIMITED" | "INTERNAL_ERROR" | "DEPENDENCY_UNAVAILABLE" | "MAINTENANCE";
+                reason: "INVALID_PARAMETER" | "INVALID_JSON" | "INVALID_REQUEST" | "AUTH_REQUIRED" | "KEY_MISSING" | "KEY_INVALID" | "KEY_DISABLED" | "KEY_EXPIRED" | "SIGN_IN_REQUIRED" | "SESSION_EXPIRED" | "ACCOUNT_NOT_FOUND" | "LINK_EXPIRED" | "PROXY_CREDENTIAL_INVALID" | "WEBHOOK_SIGNATURE_INVALID" | "PLAN_REQUIRED" | "ACCOUNT_SUSPENDED" | "KEY_ON_HOLD" | "KEY_NOT_LINKED_TO_ACCOUNT" | "KEY_MCP_ONLY" | "KEY_NOT_LINKED_TO_SHOP" | "SHOP_UNDER_REVIEW" | "NOT_OWNER" | "PURCHASE_REQUIRED" | "LIMIT_REACHED" | "PAGINATION_DEPTH_EXCEEDED" | "ADMIN_REQUIRED" | "READ_ONLY_SESSION" | "ORIGIN_BLOCKED" | "CLIENT_BLOCKED" | "ACTION_NOT_ALLOWED" | "RESOURCE_NOT_FOUND" | "ROUTE_NOT_FOUND" | "CONFLICT" | "PAYLOAD_TOO_LARGE" | "RATE_LIMITED" | "DAILY_CAP_EXCEEDED" | "MONTHLY_CAP_EXCEEDED" | "MCP_DAILY_CAP_EXCEEDED" | "PAGINATION_BURST" | "REPORT_RATE_LIMITED" | "INTERNAL_ERROR" | "DEPENDENCY_UNAVAILABLE" | "MAINTENANCE";
                 /**
                  * @description Human-readable account of what went wrong. The wording may change; treat it as text for a log or a person, not as a value to match on.
                  * @example Firearm not found: unknown-id
@@ -3697,6 +4209,21 @@ export interface components {
                 message: string;
                 /** @description Structured context for the reason: the invalid fields for `INVALID_PARAMETER`, `requiredTier` for `PLAN_REQUIRED`. */
                 details?: Record<string, unknown>;
+                /**
+                 * @description On `DAILY_CAP_EXCEEDED`, `MCP_DAILY_CAP_EXCEEDED` and `MONTHLY_CAP_EXCEEDED` only: the limit that was reached. The daily limits are per key; the monthly one is the plan's allowance for the whole account.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description On `DAILY_CAP_EXCEEDED`, `MCP_DAILY_CAP_EXCEEDED` and `MONTHLY_CAP_EXCEEDED` only: when the limit returns to zero, ISO 8601. The next midnight UTC for the daily limits (the same instant as `X-Daily-Reset`), midnight UTC on the first of next month for the monthly one (`X-Monthly-Reset`). Nothing sent before then will be served.
+                 * @example 2026-10-03T00:00:00.000Z
+                 */
+                resetsAt?: string;
+                /**
+                 * @description On `DAILY_CAP_EXCEEDED`, `MCP_DAILY_CAP_EXCEEDED` and `MONTHLY_CAP_EXCEEDED` only: whole seconds until `resetsAt`, the same figure as the `Retry-After` header.
+                 * @example 14400
+                 */
+                retryAfter?: number;
                 /**
                  * @description Quote this to support: it finds the request in our logs.
                  * @example req_01j9x3k2m8
@@ -3779,8 +4306,8 @@ export interface components {
         };
         FirearmListItem: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`. Stable: it is what a mirror keys on.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`. Stable: it is what a mirror keys on.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -3837,7 +4364,7 @@ export interface components {
             createdAt?: string;
             /**
              * @description Line-art silhouette, or null where none has been drawn.
-             * @example https://api.gunspec.io/v1/firearms/glock-17-gen5/media/silhouette
+             * @example https://api.gunspec.io/v1/firearms/glock-g17-gen5/media/silhouette
              */
             svgLineArtUrl?: string | null;
             /** @description GLB model, or null where none is on file. */
@@ -3867,7 +4394,7 @@ export interface components {
             has3dModel?: number;
             /**
              * @description Line-art silhouette, or null where none has been drawn.
-             * @example https://api.gunspec.io/v1/firearms/glock-17-gen5/media/silhouette
+             * @example https://api.gunspec.io/v1/firearms/glock-g17-gen5/media/silhouette
              */
             svgLineArtUrl?: string | null;
             /** @description GLB model, or null where none is on file. */
@@ -3908,8 +4435,8 @@ export interface components {
              */
             ballisticsSourceUrl?: string | null;
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`. Stable: it is what a mirror keys on.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`. Stable: it is what a mirror keys on.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -4187,6 +4714,19 @@ export interface components {
             /** @description Source URLs the record was compiled from. Check a specific figure against these rather than against `dataConfidence`. The same list is in `provenance.sources`. */
             sources?: string[] | null;
             /**
+             * @description When a source was last read against the record's figures. Null until one has been. The same value is in `provenance.verifiedAt`.
+             * @example 2026-09-25
+             */
+            verifiedAt?: string | null;
+            /**
+             * @description The figures a source confirmed: read off the manufacturer's own page, within the published tolerance, and accepted by a person. The same list is in `provenance.verifiedFields`.
+             * @example [
+             *       "barrel_length_mm",
+             *       "weight_empty_g"
+             *     ]
+             */
+            verifiedFields?: string[] | null;
+            /**
              * @description How completely the record is specified and how well it is sourced, 0 to 1. A record-level completeness and provenance measure, **not** a per-field probability of correctness. Use it to rank and triage; use `sources` to verify an individual number.
              * @example 0.95
              */
@@ -4226,10 +4766,28 @@ export interface components {
             /** @description Exploded-view and parts diagrams on file, empty where none have been sourced. */
             schematics?: components["schemas"]["FirearmSchematic"][];
         };
+        FeatureIcon: {
+            /**
+             * @description The icon's file name without extension, e.g. `5r_rifling`. Stable across releases.
+             * @example 5r_rifling
+             */
+            name: string;
+            /**
+             * @description The name as a reader would write it, e.g. `5R Rifling`.
+             * @example 5R Rifling
+             */
+            label: string;
+            /**
+             * Format: uri
+             * @description The drawing on the assets CDN, a WebP image. Public: it needs no key to fetch.
+             * @example https://assets.gunspec.io/content/features/simple/5r_rifling.webp
+             */
+            iconUrl: string;
+        };
         FirearmVariant: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5-mos
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5-mos
              */
             id?: string;
             /**
@@ -4255,8 +4813,8 @@ export interface components {
         };
         FirearmGameStats: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -4313,7 +4871,7 @@ export interface components {
             id: number;
             /**
              * @description Slug of the firearm this row belongs to.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearmId: string;
             /**
@@ -4325,7 +4883,7 @@ export interface components {
             type: components["schemas"]["SchematicType"];
             /**
              * @description Absolute, directly fetchable URL.
-             * @example https://assets.gunspec.io/firearms/schematics/glock-17-gen5-exploded.pdf
+             * @example https://assets.gunspec.io/firearms/schematics/glock-g17-gen5-exploded.pdf
              */
             url: string;
             /**
@@ -4362,12 +4920,12 @@ export interface components {
             id?: number;
             /**
              * @description Slug of the firearm this row belongs to.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearmId?: string;
             /**
              * @description Absolute, directly fetchable URL.
-             * @example https://api.gunspec.io/v1/firearms/glock-17-gen5/images/3076
+             * @example https://api.gunspec.io/v1/firearms/glock-g17-gen5/images/3076
              */
             url?: string;
             /**
@@ -4425,7 +4983,7 @@ export interface components {
             id?: number;
             /**
              * @description Slug of the firearm this row belongs to.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearmId?: string;
             /**
@@ -4871,8 +5429,8 @@ export interface components {
         };
         ManufacturerFirearmListItem: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -4914,8 +5472,8 @@ export interface components {
         };
         CaliberFirearmListItem: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -4962,8 +5520,8 @@ export interface components {
         };
         CategoryFirearmListItem: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5
              */
             id?: string;
             /**
@@ -5127,7 +5685,7 @@ export interface components {
             id: string;
             /**
              * @description Slug of the firearm this row belongs to.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearmId: string;
             /**
@@ -5164,7 +5722,7 @@ export interface components {
         SupportTicket: {
             /**
              * @description Opaque ticket id.
-             * @example d3f1c2a0-...
+             * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
              */
             id: string;
             /**
@@ -5201,7 +5759,7 @@ export interface components {
         WebhookEndpoint: {
             /**
              * @description Opaque endpoint id. Address it at `/v1/me/webhooks/{endpointId}`.
-             * @example wh_01H8...
+             * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
              */
             id: string;
             /**
@@ -5244,8 +5802,8 @@ export interface components {
         /** @description Minimal firearm reference returned by list-shaped analytical endpoints. */
         FirearmBrief: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
-             * @example glock-17-gen5
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -5268,7 +5826,7 @@ export interface components {
         TopFirearm: {
             /**
              * @description Slug of the firearm.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -5299,7 +5857,7 @@ export interface components {
         };
         TimelineEntry: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
              * @example ak-47
              */
             id: string;
@@ -5395,7 +5953,7 @@ export interface components {
         FirearmDimensions: {
             /**
              * @description Slug of the firearm.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -5482,7 +6040,12 @@ export interface components {
              */
             id?: number | null;
             /** @example render */
-            kind: components["schemas"]["MediaKind"];
+            kind: components["schemas"]["MediaItemKind"];
+            /**
+             * @description On a `feature_icon` only: the tag in the firearm's `features` this drawing illustrates, exactly as the record carries it.
+             * @example Picatinny rail
+             */
+            feature?: string;
             /**
              * @description Media type of the bytes, e.g. `image/png`.
              * @example image/png
@@ -5556,10 +6119,15 @@ export interface components {
              */
             energyJ: number;
             /**
-             * @description Bullet drop below the line of sight at this distance, in centimetres.
+             * @description Drop below the bore line at this distance, in cm: the fall under gravity alone, with no sighting.
              * @example 10
              */
             dropCm: number;
+            /**
+             * @description Height relative to the line of sight at this distance, in cm, negative below: how a drop table reads, for the answer's `zeroing` (the gun zeroed at `zeroM` with its sights `sightHeightMm` above the bore). Starts at minus the sight height at the muzzle and is 0 at the zero.
+             * @example -3.2
+             */
+            pathCm?: number;
             /**
              * @description Time of flight to this distance, in seconds.
              * @example 0.143
@@ -5585,6 +6153,19 @@ export interface components {
              * @example 3801.5
              */
             energyDensityJCm2: number;
+        };
+        /** @description How the gun is assumed sighted for `pathCm`. Neither figure is recorded per gun, so each is an assumption the caller may override with `zero_m` and `sight_height_mm`: a handgun zeroed at 25 m with its sights 20 mm above the bore, a long gun at 100 m with an optic 38 mm above it. */
+        Zeroing: {
+            /**
+             * @description The distance at which the bullet crosses the line of sight, in m.
+             * @example 25
+             */
+            zeroM: number;
+            /**
+             * @description The line of sight above the bore, in mm.
+             * @example 20
+             */
+            sightHeightMm: number;
         };
         /** @description Terminal performance indices computed at the muzzle. */
         TerminalBallistics: {
@@ -5617,7 +6198,7 @@ export interface components {
         /** @description The firearm the solution was computed for. `barrelLengthMm` is absent when the firearm has no recorded barrel. */
         BallisticsFirearm: {
             /**
-             * @description URL-safe slug identifying the firearm, e.g. `glock-17-gen5`.
+             * @description URL-safe slug identifying the firearm, e.g. `glock-g17-gen5`.
              * @example ak-47
              */
             id: string;
@@ -5636,7 +6217,7 @@ export interface components {
         FirearmSearchResult: {
             /**
              * @description URL-safe slug identifying the firearm. Stable: it is what a mirror keys on.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -5720,12 +6301,12 @@ export interface components {
         FavoriteFirearm: {
             /**
              * @description URL-safe slug identifying the firearm. The same value as `firearm_id`.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
              * @description Slug of the firearm, under the favorites table's own column name. The same value as `id`.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearm_id: string;
             /**
@@ -5794,7 +6375,7 @@ export interface components {
         HeadToHeadFirearm: {
             /**
              * @description URL-safe slug identifying the firearm. Stable: it is what a mirror keys on.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -5874,7 +6455,7 @@ export interface components {
         PopularFirearm: {
             /**
              * @description Slug of the firearm. Named `entity_id` because the rollup counts views of any entity kind; it is `id` on the catalog endpoints.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             entity_id: string;
             /**
@@ -5909,7 +6490,7 @@ export interface components {
             status?: components["schemas"]["FirearmStatus"] | null;
             /**
              * @description Line-art silhouette, or null where none has been drawn.
-             * @example https://api.gunspec.io/v1/firearms/glock-17-gen5/media/silhouette
+             * @example https://api.gunspec.io/v1/firearms/glock-g17-gen5/media/silhouette
              */
             svg_line_art_url?: string | null;
             /**
@@ -6042,7 +6623,7 @@ export interface components {
         GameProfile: {
             /**
              * @description Slug of the firearm this profile is for.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             id: string;
             /**
@@ -6277,15 +6858,22 @@ export interface components {
         SiteUpdate: {
             /**
              * @description The slug, and the URL: `gunspec.io/updates/{id}`.
-             * @example firearm-intake-paused
+             * @example faster-corrections-and-published-data-checks
              */
             id: string;
-            /** @example Firearm intake is paused while quality checks land */
+            /**
+             * @description The headline, as the post is listed.
+             * @example Faster corrections, published data checks, and new releases found for us
+             */
             title: string;
-            /** @example No new firearms this month. Here is what we are building instead. */
+            /**
+             * @description One or two sentences under the headline, for a list or a feed.
+             * @example Corrections now reach the catalogue the moment a reviewer saves them, and every data check we run is published with its findings.
+             */
             summary?: string;
-            /** @example catalog */
+            /** @example platform */
             kind: components["schemas"]["UpdateKind"];
+            /** @description The post, as typed blocks in reading order rather than markup: see `UpdateBlock`. */
             body: components["schemas"]["UpdateBlock"][];
             figure?: components["schemas"]["UpdateFigure"];
             /**
@@ -6302,11 +6890,11 @@ export interface components {
         /** @description One run of the contract suite: every documented operation called against this API and held against this document. Produced by `scripts/smoke/` in CI. Uptime is a separate question and a separate system - this says whether what the API answers is still what the reference promises. */
         ApiContractRun: {
             /**
-             * @description The product the run measured: this REST API or the hosted MCP server.
+             * @description What the run measured: `api` for this REST API, `mcp` for the hosted MCP server, `fitment` for the attachment compatibility suite, `catalogue` for the catalogue record checks: every file against its schema, no company under two ids, and no firearm whose fields cannot all be true, `integrity` for the integrity checks: figures, prose and feature lists copied between unrelated guns, citations that are not evidence, timelines, weight against size, and confidence against evidence, `plausibility` for the plausibility checks: a loaded weight against the empty one and its magazine, a gun older than its cartridge, figures in the wrong unit, energy against velocity, variants that disagree with their family, and the same gun filed twice, `anomalies` for the statistical anomaly checks: a figure unusually far from its family's or its cohort's median, and a barrel an unusual share of its gun's length; each a figure to verify, not one shown wrong, `cartridges` for the cartridge checks: energy against bullet and velocity, pressure in MPa against psi, dimensions no case can have, a bullet against the calibre its name states, a cartridge older than its parent, and each load against its cartridge, `materials` for the materials registry: every material's density quoted from a page that still states it, within the range it declares, and every material value the catalogue uses covered, so the mass checks read sourced densities, `corroboration` for the corroboration checks: firearm figures compared with a second, independent source (Wikidata), `sources` for the source checks: how many records cite their own maker or another authority, and which heavily cited sites the source hierarchy cannot yet name, `manufacturers` for the manufacturer checks: every manufacturer record held against Wikidata for its website, founding year, country and whether it still trades, `links` for the link checks: every manufacturer website and every cited source asked whether it still answers and is still the page cited.
              * @example api
              * @enum {string}
              */
-            surface?: "api" | "mcp";
+            surface?: "api" | "mcp" | "fitment" | "catalogue" | "integrity" | "plausibility" | "anomalies" | "cartridges" | "materials" | "corroboration" | "sources" | "manufacturers" | "links";
             /**
              * @description Which environment was measured: `production`, `staging` or `local`. A staging run is never mixed into production, because a report read as evidence about the wrong environment is worse than no report.
              * @example production
@@ -6421,6 +7009,11 @@ export interface components {
                      */
                     skipped?: number;
                 };
+                /**
+                 * @description What the operation asks, when its key does not say. A fitment scenario states its question and the checks behind it; an API operation carries none, its path being its name.
+                 * @example null
+                 */
+                describes?: string | null;
                 /** @description Only the checks that failed. A run is about 1,500 checks, and the passing ones are the counts above. */
                 failures: {
                     /**
@@ -6640,6 +7233,11 @@ export interface components {
              */
             heroImage?: string | null;
             /**
+             * @description What the hero image shows, as alt text. Null where the post has no hero or none was written.
+             * @example Studio render of the AK-47, left side
+             */
+            heroAlt?: string | null;
+            /**
              * @description Editorial category, e.g. `guides`. Null where the post has none.
              * @example guides
              */
@@ -6664,6 +7262,29 @@ export interface components {
              * @example 2026-08-02 10:01:07
              */
             updatedAt: string;
+            /** @description Who wrote the post: the display name on the account that created it, never its address. Null when that account has no display name, and the post is then attributed to the publisher. */
+            author?: {
+                /**
+                 * @description The author's display name, as set on their GunSpec account.
+                 * @example Sacha Roussakis-Notter
+                 */
+                name: string;
+                /**
+                 * @description URL segment of the author's page on the blog, made from their display name.
+                 * @example sacha-roussakis-notter
+                 */
+                handle: string;
+                /**
+                 * @description Which avatar style the author chose on their account.
+                 * @example bottts
+                 */
+                avatarStyle: string;
+                /**
+                 * @description Seed the avatar is drawn from. Stable per author, and not their account id.
+                 * @example 9f2c4a1b7e30d5c6
+                 */
+                avatarSeed: string;
+            } | null;
         };
         GameStatsVersion: {
             /**
@@ -6695,7 +7316,7 @@ export interface components {
         GameStatsSnapshotEntry: {
             /**
              * @description Slug of the firearm this row is about.
-             * @example glock-17-gen5
+             * @example glock-g17-gen5
              */
             firearm_id?: string;
             /**
@@ -6826,22 +7447,19 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description Rate limit exceeded */
+        /** @description A limit was reached. `RATE_LIMITED` is the per-minute limit: wait `Retry-After` seconds (a minute) and retry. `DAILY_CAP_EXCEEDED` is the plan's daily limit, per key: nothing will be served until the counters return to zero at midnight UTC. `MONTHLY_CAP_EXCEEDED` is the plan's monthly allowance, for the whole account: nothing will be served until midnight UTC on the first of next month, or until the plan changes. For both, `Retry-After` is the seconds until then and `error.resetsAt` says when as an instant. Calls made after a refusal are refused too and do not spend the month, and a free key that keeps calling is paused, so stop at the first one and resume at the reset. */
         TooManyRequests: {
             headers: {
+                "Retry-After": components["headers"]["RetryAfter"];
+                "X-Daily-Limit": components["headers"]["DailyLimit"];
+                "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                "X-Daily-Reset": components["headers"]["DailyReset"];
+                "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                 [name: string]: unknown;
             };
             content: {
-                /**
-                 * @example {
-                 *       "success": false,
-                 *       "error": {
-                 *         "code": "RATE_LIMITED",
-                 *         "reason": "RATE_LIMITED",
-                 *         "message": "Rate limit exceeded. Try again later."
-                 *       }
-                 *     }
-                 */
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
@@ -6894,12 +7512,27 @@ export interface components {
         order: "asc" | "desc";
         /**
          * @description Resource slug ID
-         * @example glock-17-gen5
+         * @example glock-g17-gen5
          */
         slugId: string;
     };
     requestBodies: never;
-    headers: never;
+    headers: {
+        /** @description Requests this key may make per UTC day on its plan: the daily limit, per key. Sent on every `/v1` response for a plan that has one, and absent for a plan with no daily ceiling. */
+        DailyLimit: number;
+        /** @description Requests this key has left today after this one, never below zero: the response to the last request that will be served reports 0, and the next request is refused with a 429. Stop at zero rather than spend calls the limit will refuse. A 304 spends nothing, so it reports what was left before it. It is served from a short cache while you are well under the limit and read live once you are near it, so it can read high by about a minute of traffic early in the day; `GET /v1/me/usage` is the figure to reconcile against. */
+        DailyRemaining: number;
+        /** @description When the daily counters return to zero: the next midnight UTC, as an ISO 8601 instant. Parse it as a date to know how long until the allowance is back. */
+        DailyReset: string;
+        /** @description Requests the plan allows per UTC month, for the whole account: every key draws on one pool. Sent on every `/v1` response made with a key, and absent for a keyless call, which has the daily limit only. */
+        MonthlyLimit: number;
+        /** @description Requests the account has left this month after this one, never below zero: the response to the last request that will be served reports 0, and the next is refused with a 429. Only calls that were served spend it: a call a limit refused, and a 304, do not. It is served from a short cache while you are well under the allowance and read live near it, so it can read high by about a minute of traffic. `GET /v1/me/usage` is the figure to reconcile against. */
+        MonthlyRemaining: number;
+        /** @description When the monthly allowance returns to zero: midnight UTC on the first of next month, as an ISO 8601 instant. */
+        MonthlyReset: string;
+        /** @description Whole seconds to wait before retrying. A per-minute refusal sends 60. A daily refusal sends the seconds left until the next midnight UTC, at most 86,400. A monthly refusal sends the seconds left until midnight UTC on the first of next month, at most 2,678,400. Waiting that long is the whole answer, since nothing is served before the reset. */
+        RetryAfter: number;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
@@ -7088,6 +7721,12 @@ export interface operations {
             /** @description Paginated list of firearms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=60, s-maxage=300, stale-while-revalidate=60`. */
@@ -7137,6 +7776,26 @@ export interface operations {
                 page?: components["parameters"]["page"];
                 /** @description Items per page (max 100) */
                 per_page?: components["parameters"]["per_page"];
+                /**
+                 * @description Only matches from this manufacturer slug
+                 * @example glock
+                 */
+                manufacturer?: string;
+                /**
+                 * @description Only matches in this category slug
+                 * @example pistol
+                 */
+                category?: string;
+                /**
+                 * @description Only matches with this action type, as stored and underscored. The vocabulary is /v1/firearms/action-types
+                 * @example short_recoil
+                 */
+                action_type?: string;
+                /**
+                 * @description Only matches from this ISO 3166-1 alpha-2 country code
+                 * @example AT
+                 */
+                country_of_origin?: string;
             };
             header?: {
                 /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
@@ -7150,6 +7809,12 @@ export interface operations {
             /** @description Paginated search results ordered by relevance */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=60, s-maxage=300, stale-while-revalidate=60`. */
@@ -7208,6 +7873,12 @@ export interface operations {
             /** @description The resolution, whether or not it resolved. A query that matches nothing is a 200 with `status: "not_found"`, not a 404, because the request was answerable and the answer is that we hold no such record. */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -7326,6 +7997,12 @@ export interface operations {
             /** @description One result per query. A query that resolved to nothing is a result with `status: "not_found"`, never an error: one unknown name does not fail the batch. */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7419,7 +8096,7 @@ export interface operations {
             query: {
                 /**
                  * @description Comma-separated firearm slugs, maximum 5
-                 * @example glock-17-gen5,sig-sauer-p320-full-size
+                 * @example glock-g17-gen5,sig-sauer-p320-full-size
                  */
                 ids: string;
             };
@@ -7435,6 +8112,12 @@ export interface operations {
             /** @description Compare firearms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -7509,7 +8192,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -7520,6 +8203,12 @@ export interface operations {
             /** @description Get a firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -7574,6 +8263,12 @@ export interface operations {
             /** @description List variants */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7603,7 +8298,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -7614,6 +8309,12 @@ export interface operations {
             /** @description List images */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7641,14 +8342,14 @@ export interface operations {
             query?: {
                 /** @description raw file, or a base64 data URI */
                 format?: "raw" | "datauri";
-                /** @description Pre-rendered derivative; falls back to the original when absent */
+                /** @description WebP by default: `display` is full size with transparency, `thumb` a small preview, `original` the uploaded file (usually PNG). A missing derivative falls back to the original */
                 variant?: "original" | "display" | "thumb";
             };
             header?: never;
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
                 /**
@@ -7664,6 +8365,12 @@ export interface operations {
             /** @description The image bytes when `format=raw` (the default), or the JSON envelope when `format=datauri` */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7677,7 +8384,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Slug of the firearm the image belongs to.
-                             * @example glock-17-gen5
+                             * @example glock-g17-gen5
                              */
                             id?: string;
                             /**
@@ -7752,6 +8459,12 @@ export interface operations {
             /** @description Index every firearm that has imagery */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -7794,15 +8507,15 @@ export interface operations {
             query?: {
                 /**
                  * @description Return only one kind of asset
-                 * @example render
+                 * @example feature_icon
                  */
-                kind?: "silhouette" | "render" | "photo" | "schematic" | "model";
+                kind?: "silhouette" | "render" | "photo" | "schematic" | "model" | "feature_icon";
             };
             header?: never;
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -7813,6 +8526,12 @@ export interface operations {
             /** @description List every asset for a firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7840,7 +8559,7 @@ export interface operations {
             query?: {
                 /** @description Bytes, an inline data URI, or metadata only */
                 format?: "raw" | "datauri" | "json";
-                /** @description Pre-rendered derivative; falls back to the original when absent */
+                /** @description WebP by default: `display` is full size with transparency, `thumb` a small preview, `full` the uploaded file (usually PNG). A missing derivative falls back to the original */
                 size?: "full" | "display" | "thumb";
                 /** @description Silhouettes only: inject a stroke so line art reads on any background */
                 stroke_width?: number;
@@ -7854,12 +8573,12 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
                 /**
                  * @description Which asset: a **kind**, which resolves to the primary asset of that kind, or the numeric `id` of one row from `/v1/firearms/{id}/media`. Addressing by kind means never having to list first just to learn an id.
-                 * @example render
+                 * @example silhouette
                  */
                 selector: ("silhouette" | "render" | "photo" | "schematic" | "model") | string;
             };
@@ -7870,6 +8589,12 @@ export interface operations {
             /** @description The asset bytes when `format=raw` (the default), or the JSON envelope when `format` is `datauri` or `json` */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7922,6 +8647,12 @@ export interface operations {
             /** @description List schematics */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7951,7 +8682,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -7962,6 +8693,12 @@ export interface operations {
             /** @description List known users */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8001,7 +8738,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8012,6 +8749,12 @@ export interface operations {
             /** @description The SVG file when `format=raw`, or the JSON envelope when `format` is `datauri` or `json` */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8089,6 +8832,12 @@ export interface operations {
             /** @description The glTF binary for the firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8116,7 +8865,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8127,6 +8876,12 @@ export interface operations {
             /** @description Calculate ballistics for a firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8214,12 +8969,22 @@ export interface operations {
                  * @example m882
                  */
                 ammo_id?: string;
+                /**
+                 * @description Zero distance in metres, where the bullet crosses the line of sight. Defaults to 25 for a handgun and 100 for a long gun.
+                 * @example 25
+                 */
+                zero_m?: number;
+                /**
+                 * @description Line of sight above the bore, in mm. Defaults to 20 for a handgun and 38 for a long gun.
+                 * @example 20
+                 */
+                sight_height_mm?: number;
             };
             header?: never;
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8230,6 +8995,12 @@ export interface operations {
             /** @description Load a firearm with an ammunition type */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8307,6 +9078,7 @@ export interface operations {
                                  */
                                 effectiveRangeM?: number | null;
                             };
+                            zeroing?: components["schemas"]["Zeroing"];
                             /** @description The flight path, one row per distance step. */
                             trajectory?: components["schemas"]["TrajectoryPoint"][];
                             /** @description Why the calculation could not be completed, or null when it succeeded. */
@@ -8330,7 +9102,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8341,6 +9113,12 @@ export interface operations {
             /** @description Get live game stats */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8369,7 +9147,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8380,6 +9158,12 @@ export interface operations {
             /** @description Get game archetype profile */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8408,7 +9192,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8419,6 +9203,12 @@ export interface operations {
             /** @description Get dimensions in both unit systems */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8458,6 +9248,12 @@ export interface operations {
             /** @description Get the variant family tree */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8486,7 +9282,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8497,6 +9293,12 @@ export interface operations {
             /** @description Find similar firearms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8526,7 +9328,7 @@ export interface operations {
             path: {
                 /**
                  * @description Resource slug ID
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: components["parameters"]["slugId"];
             };
@@ -8537,6 +9339,12 @@ export interface operations {
             /** @description Get the adoption map */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8581,6 +9389,12 @@ export interface operations {
             /** @description Get a random firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8594,7 +9408,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Slug of the drawn firearm.
-                             * @example glock-17-gen5
+                             * @example glock-g17-gen5
                              */
                             id?: string;
                             /**
@@ -8682,6 +9496,12 @@ export interface operations {
             /** @description Rank firearms by a superlative */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -8723,7 +9543,7 @@ export interface operations {
             query: {
                 /**
                  * @description First firearm slug
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 a: string;
                 /**
@@ -8744,6 +9564,12 @@ export interface operations {
             /** @description Compare two firearms head to head */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -8781,11 +9607,11 @@ export interface operations {
                             verdicts?: {
                                 [key: string]: {
                                     /**
-                                     * @description Which firearm wins this stat. A firearm carrying the value beats one that does not; equal values draw.
+                                     * @description Which firearm wins this stat. Equal values draw. `unknown` when only one firearm carries the value: a missing figure is not a loss, so no winner is named.
                                      * @example a
                                      * @enum {string}
                                      */
-                                    winner?: "a" | "b" | "draw";
+                                    winner?: "a" | "b" | "draw" | "unknown";
                                     /**
                                      * @description The first firearm's value for this stat, in the unit the field name states. Null where it does not carry the field.
                                      * @example 625
@@ -8844,6 +9670,12 @@ export interface operations {
             /** @description Get the game meta roster */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -8895,6 +9727,12 @@ export interface operations {
             /** @description List action types */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -8957,6 +9795,12 @@ export interface operations {
             /** @description Get available filter values */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -9064,6 +9908,56 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    listFeatureIcons: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Part of an icon's name; spaces and hyphens read as underscores, so `picatinny rail` finds `picatinny_rail`
+                 * @example rifling
+                 */
+                q?: string;
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List feature icons */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: components["schemas"]["FeatureIcon"][];
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     getFirearmsByFeature: {
         parameters: {
             query: {
@@ -9094,6 +9988,12 @@ export interface operations {
             /** @description Filter by feature */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9137,6 +10037,14 @@ export interface operations {
                              *     ]
                              */
                             features?: string[] | null;
+                            /**
+                             * @description The drawn icon each of `features` borrows, as its URL on the assets CDN (a WebP that loads without a key), in the same order, or null for a feature no drawing fits. Null where `features` is.
+                             * @example [
+                             *       "https://assets.gunspec.io/content/features/simple/threaded_barrel.webp",
+                             *       "https://assets.gunspec.io/content/features/simple/accessory_rail.webp"
+                             *     ]
+                             */
+                            featureIcons?: (string | null)[] | null;
                         }[];
                         pagination?: components["schemas"]["Pagination"];
                     };
@@ -9185,6 +10093,12 @@ export interface operations {
             /** @description Filter by action type */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9288,6 +10202,12 @@ export interface operations {
             /** @description Filter by construction material */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9376,6 +10296,12 @@ export interface operations {
             /** @description Filter by designer */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9464,6 +10390,12 @@ export interface operations {
             /** @description Filter by conflict */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9573,6 +10505,12 @@ export interface operations {
             /** @description Rank by composite power rating */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9701,6 +10639,12 @@ export interface operations {
             /** @description Browse the catalog chronologically */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9755,6 +10699,12 @@ export interface operations {
             /** @description List the most viewed firearms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -9806,6 +10756,12 @@ export interface operations {
             /** @description List manufacturers */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -9864,6 +10820,12 @@ export interface operations {
             /** @description Get a manufacturer */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -9923,6 +10885,12 @@ export interface operations {
             /** @description List a manufacturer firearms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -9964,6 +10932,12 @@ export interface operations {
             /** @description Get a manufacturer product timeline */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -9999,7 +10973,7 @@ export interface operations {
                                 firearms?: {
                                     /**
                                      * @description Slug of the firearm.
-                                     * @example glock-17-gen5
+                                     * @example glock-g17-gen5
                                      */
                                     id?: string;
                                     /**
@@ -10054,6 +11028,12 @@ export interface operations {
             /** @description Get manufacturer statistics */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10183,7 +11163,7 @@ export interface operations {
                 q?: string;
                 /**
                  * @description Filter by cartridge type
-                 * @example centerfire
+                 * @example rimless
                  */
                 cartridge_type?: string;
                 /**
@@ -10191,6 +11171,11 @@ export interface operations {
                  * @example boxer
                  */
                 primer_type?: string;
+                /**
+                 * @description Only cartridges chambered by at least one firearm with this action, as stored and underscored. The vocabulary is /v1/firearms/action-types
+                 * @example lever_action
+                 */
+                action_type?: string;
             };
             header?: {
                 /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
@@ -10204,6 +11189,12 @@ export interface operations {
             /** @description List calibers */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -10262,6 +11253,12 @@ export interface operations {
             /** @description Compare calibers */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -10349,6 +11346,12 @@ export interface operations {
             /** @description Get a caliber ballistic profile */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -10456,6 +11459,12 @@ export interface operations {
             /** @description Get a caliber */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
@@ -10515,6 +11524,12 @@ export interface operations {
             /** @description List firearms in a caliber */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10556,6 +11571,12 @@ export interface operations {
             /** @description Get the parent cartridge chain */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10596,6 +11617,12 @@ export interface operations {
             /** @description Get the cartridge family */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10647,6 +11674,12 @@ export interface operations {
             /** @description List ammunition for a caliber */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10678,6 +11711,11 @@ export interface operations {
                 /** @description Items per page (max 100) */
                 per_page?: components["parameters"]["per_page"];
                 /**
+                 * @description Substring match on the load name, designation, maker or cartridge name
+                 * @example federal
+                 */
+                q?: string;
+                /**
                  * @description Filter by caliber slug
                  * @example 9x19mm-parabellum
                  */
@@ -10705,6 +11743,12 @@ export interface operations {
             /** @description List ammunition loads */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -10763,6 +11807,12 @@ export interface operations {
             /** @description Get an ammunition load */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -10812,6 +11862,16 @@ export interface operations {
                  * @example 0,100,200,300,500
                  */
                 distances?: string;
+                /**
+                 * @description Zero distance in metres, where the bullet crosses the line of sight. Defaults to 25 for a handgun and 100 for a long gun.
+                 * @example 25
+                 */
+                zero_m?: number;
+                /**
+                 * @description Line of sight above the bore, in mm. Defaults to 20 for a handgun and 38 for a long gun.
+                 * @example 20
+                 */
+                sight_height_mm?: number;
             };
             header?: never;
             path: {
@@ -10828,6 +11888,12 @@ export interface operations {
             /** @description Compute a ballistic table */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10878,6 +11944,7 @@ export interface operations {
                              */
                             effectiveRangeM?: number;
                             terminalBallistics?: components["schemas"]["TerminalBallistics"];
+                            zeroing?: components["schemas"]["Zeroing"];
                             /** @description The solution sampled at each requested distance. */
                             trajectory?: components["schemas"]["TrajectoryPoint"][];
                         };
@@ -10910,6 +11977,12 @@ export interface operations {
             /** @description A scale SVG cross-section of the bullet */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10937,6 +12010,12 @@ export interface operations {
             /** @description List categories */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -10996,6 +12075,12 @@ export interface operations {
             /** @description List firearms in a category */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11034,6 +12119,12 @@ export interface operations {
             /** @description Get the database summary */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. This endpoint sends `public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600`. */
@@ -11051,7 +12142,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Firearms in the catalog.
-                             * @example 9162
+                             * @example 8642
                              */
                             total_firearms?: number;
                             /**
@@ -11113,6 +12204,12 @@ export interface operations {
             /** @description Count firearms by production status */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11157,6 +12254,12 @@ export interface operations {
             /** @description Get field coverage percentages */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11201,6 +12304,12 @@ export interface operations {
             /** @description Get catalog coverage by grouping */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11214,7 +12323,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Total records matching the query across every page.
-                             * @example 9162
+                             * @example 8642
                              */
                             total?: number;
                             /**
@@ -11263,6 +12372,12 @@ export interface operations {
             /** @description Rank calibers by adoption */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11325,6 +12440,12 @@ export interface operations {
             /** @description Rank manufacturers by output */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11379,6 +12500,12 @@ export interface operations {
             /** @description Count firearms by category */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11449,6 +12576,12 @@ export interface operations {
             /** @description Count firearms by era */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11513,6 +12646,12 @@ export interface operations {
             /** @description Count construction materials by component */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11605,6 +12744,12 @@ export interface operations {
             /** @description List a country adoption record */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11680,6 +12825,12 @@ export interface operations {
             /** @description Count adoptions by operator type */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11737,6 +12888,12 @@ export interface operations {
             /** @description Count firearms by action type */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11789,6 +12946,12 @@ export interface operations {
             /** @description Rank features by frequency */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11844,6 +13007,12 @@ export interface operations {
             /** @description Track caliber popularity over time */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11901,6 +13070,12 @@ export interface operations {
             /** @description Get dataset field coverage */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -11916,7 +13091,7 @@ export interface operations {
                             firearms?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 9162
+                                 * @example 8642
                                  */
                                 total?: number;
                                 /**
@@ -11932,7 +13107,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 9162
+                                         * @example 8642
                                          */
                                         filled?: number;
                                         /**
@@ -11947,7 +13122,7 @@ export interface operations {
                             calibers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 9162
+                                 * @example 8642
                                  */
                                 total?: number;
                                 /**
@@ -11963,7 +13138,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 9162
+                                         * @example 8642
                                          */
                                         filled?: number;
                                         /**
@@ -11978,7 +13153,7 @@ export interface operations {
                             manufacturers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 9162
+                                 * @example 8642
                                  */
                                 total?: number;
                                 /**
@@ -11994,7 +13169,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 9162
+                                         * @example 8642
                                          */
                                         filled?: number;
                                         /**
@@ -12031,6 +13206,12 @@ export interface operations {
             /** @description Get catalog gaps and integrity checks */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12099,7 +13280,7 @@ export interface operations {
                                 entity?: string;
                                 /**
                                  * @description How many records that catalog holds.
-                                 * @example 9162
+                                 * @example 8642
                                  */
                                 total?: number;
                                 /** @description Keyed by kind: `silhouette`, `photo`, `render`, `model`, `schematic`. Each carries `records`, `assets` and `coveragePct`. */
@@ -12171,8 +13352,45 @@ export interface operations {
                 status?: "open" | "claimed" | "in_progress" | "resolved" | "unverifiable" | "not_a_fault";
                 /** @description Only tasks for one catalog. */
                 entity?: "manufacturers" | "firearms" | "calibers" | "attachments" | "ammunition";
-                /** @description How many to return. */
+                /**
+                 * @description Only one check's tasks, by the id the data quality pages print (`firearm-weight-fits-its-size`); the `quality:` prefix is optional.
+                 * @example firearm-weight-fits-its-size
+                 */
+                check?: string;
+                /**
+                 * @description Only tasks about one record field.
+                 * @example weight_empty_g
+                 */
+                field?: string;
+                /**
+                 * @description Only tasks about one record.
+                 * @example glock-17
+                 */
+                subject?: string;
+                /**
+                 * @description A search: a task number (`12879` or `#12879`), or text found in the record id or the check id.
+                 * @example enfield
+                 */
+                q?: string;
+                /** @description Only one kind of task. */
+                kind?: "gap" | "contradiction" | "vocabulary" | "asset" | "verify" | "report";
+                /** @description Where the work stands: `queued`, `working`, `proposed` (answered and waiting on a person) or `accepted`. */
+                stage?: "queued" | "working" | "proposed" | "accepted";
+                /**
+                 * @description Several checks' tasks at once, comma-separated (at most 40), for a page listing every check that rests on one method. Each id matches with or without its `quality:` prefix.
+                 * @example firearm-figure-fits-its-family,firearm-barrel-fits-its-length
+                 */
+                checks?: string;
+                /** @description `open` is every task not yet closed (queued or being worked); `closed` is every closed task, newest closure first. */
+                state?: "open" | "closed";
+                /** @description Closed tasks by who closed them, newest closure first: `redback` (the platform's agent filed a conclusion nobody has judged yet), `redback_accepted` (a person accepted what the agent filed) or `team` (a person worked or closed it, or corrected the record so the check no longer finds it). */
+                closer?: "redback" | "redback_accepted" | "team";
+                /** @description `research` adds each task's research inputs: the rule, the steps, the evidence and the record's own fields. Never the proposal. */
+                include?: "research";
+                /** @description How many to return per page. */
                 limit?: number;
+                /** @description The page, from 1. */
+                page?: number;
             };
             header?: never;
             path?: never;
@@ -12183,6 +13401,12 @@ export interface operations {
             /** @description List data remediation tasks */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12194,7 +13418,22 @@ export interface operations {
                         success: boolean;
                         /** @description The response payload. */
                         data: {
-                            /** @description Most recently seen first. */
+                            /**
+                             * @description How many tasks match.
+                             * @example 46
+                             */
+                            total?: number;
+                            /**
+                             * @description This page.
+                             * @example 1
+                             */
+                            page?: number;
+                            /**
+                             * @description Tasks per page.
+                             * @example 50
+                             */
+                            perPage?: number;
+                            /** @description Most recently seen first; with `state=closed` or `closer`, most recently closed first. */
                             tasks?: {
                                 /**
                                  * @description Stable id, derived from the finding rather than assigned, so the same finding is the same task tomorrow.
@@ -12202,11 +13441,81 @@ export interface operations {
                                  */
                                 taskKey?: string;
                                 /**
+                                 * @description The task's number; `/v1/data/tasks/{number}` loads it.
+                                 * @example 1204
+                                 */
+                                number?: number | null;
+                                /** @description With `include=research` only: what a researcher needs, read from the task. Never its result. */
+                                research?: {
+                                    /**
+                                     * @description The check's rule and this finding's own line.
+                                     * @example Every firearm with a full envelope has an apparent density within 2.5x of its category median.
+                                     */
+                                    describes: string | null;
+                                    /**
+                                     * @description The record field it concerns.
+                                     * @example weight_empty_g
+                                     */
+                                    field: string | null;
+                                    /**
+                                     * @description The steps to resolve it.
+                                     * @example [
+                                     *       "Check each of the four figures against the maker's page."
+                                     *     ]
+                                     */
+                                    rules: string[];
+                                    /**
+                                     * @description What the check measured, or the values removed as invented (never to be reused).
+                                     * @example {
+                                     *       "apparentDensity": 0.258,
+                                     *       "categoryMedian": 0.892
+                                     *     }
+                                     */
+                                    evidence: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    /**
+                                     * @description The record's fields as a reviewer is handed them.
+                                     * @example {
+                                     *       "id": "angstadt-udp-556",
+                                     *       "weight_empty_g": 2268
+                                     *     }
+                                     */
+                                    record: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    /**
+                                     * @description The pages the record already cites.
+                                     * @example [
+                                     *       "https://angstadtarms.com/udp-556"
+                                     *     ]
+                                     */
+                                    alreadyCites: string[];
+                                    /**
+                                     * @description The finding's own key within its check: the record and field, or a cited host.
+                                     * @example manufacturer:escort merged_into
+                                     */
+                                    key: string | null;
+                                    /**
+                                     * @description The field's value on the record when the task was raised, of whatever type the field holds.
+                                     * @example 2268
+                                     */
+                                    currentValue: unknown;
+                                    /**
+                                     * @description Every record the finding covers, as `<kind>:<id>`.
+                                     * @example [
+                                     *       "firearm:enfield-no-2",
+                                     *       "firearm:gewehr-43"
+                                     *     ]
+                                     */
+                                    affected: string[];
+                                };
+                                /**
                                  * @description What the asset is: `silhouette`, `render`, `photo`, `schematic`, `model`. `/v1/firearms/{id}/media/{selector}` addresses an asset by this.
                                  * @example contradiction
                                  * @enum {string}
                                  */
-                                kind?: "gap" | "contradiction" | "vocabulary" | "asset";
+                                kind?: "gap" | "contradiction" | "vocabulary" | "asset" | "verify" | "report";
                                 /**
                                  * @description Which catalog.
                                  * @example calibers
@@ -12259,8 +13568,21 @@ export interface operations {
                                  * @enum {string|null}
                                  */
                                 assignedTo?: "redback" | "staff" | null;
+                                /**
+                                 * @description Why a closed task closed, as a code: `finding_gone` (the check no longer finds it, because the record was corrected), `worked` (a worker filed a conclusion) or `by_hand` (closed without one). Null while open. Never the note it was closed with.
+                                 * @example finding_gone
+                                 * @enum {string|null}
+                                 */
+                                closedReason?: "finding_gone" | "worked" | "by_hand" | null;
+                                /**
+                                 * @description Who closed it, as a kind: `redback` (the platform's agent filed a conclusion nobody has judged yet), `redback_accepted` (a person accepted what the agent filed) or `team` (a person worked or closed it, or corrected the record so the check no longer finds it, which `closedReason` then says). Null while open. Never which agent or which person.
+                                 * @example team
+                                 * @enum {string|null}
+                                 */
+                                closer?: "redback" | "redback_accepted" | "team" | null;
                             }[];
                         };
+                        pagination?: components["schemas"]["Pagination"];
                     };
                 };
             };
@@ -12284,6 +13606,12 @@ export interface operations {
             /** @description Count data tasks per finding */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12312,7 +13640,599 @@ export interface operations {
                                     [key: string]: number;
                                 };
                             };
+                            /**
+                             * @description Tasks closed in the last 7 days, the last 30 days and all time, each split by who closed them (the `closer` values the task list carries).
+                             * @example {
+                             *       "last7Days": {
+                             *         "redback": 18,
+                             *         "redback_accepted": 0,
+                             *         "team": 270
+                             *       },
+                             *       "last30Days": {
+                             *         "redback": 18,
+                             *         "redback_accepted": 0,
+                             *         "team": 276
+                             *       },
+                             *       "allTime": {
+                             *         "redback": 18,
+                             *         "redback_accepted": 0,
+                             *         "team": 276
+                             *       }
+                             *     }
+                             */
+                            closed?: {
+                                /** @description Closed in the last 7 days. */
+                                last7Days: {
+                                    /** @description Closed by `redback`. */
+                                    redback: number;
+                                    /** @description Closed by `redback_accepted`. */
+                                    redback_accepted: number;
+                                    /** @description Closed by `team`. */
+                                    team: number;
+                                };
+                                /** @description Closed in the last 30 days. */
+                                last30Days: {
+                                    /** @description Closed by `redback`. */
+                                    redback: number;
+                                    /** @description Closed by `redback_accepted`. */
+                                    redback_accepted: number;
+                                    /** @description Closed by `team`. */
+                                    team: number;
+                                };
+                                /** @description Closed since the board began. */
+                                allTime: {
+                                    /** @description Closed by `redback`. */
+                                    redback: number;
+                                    /** @description Closed by `redback_accepted`. */
+                                    redback_accepted: number;
+                                    /** @description Closed by `team`. */
+                                    team: number;
+                                };
+                            };
                         };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listDataVerifications: {
+        parameters: {
+            query?: {
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List accepted verifications */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: {
+                            /**
+                             * @description The firearm.
+                             * @example glock-g17-gen5
+                             */
+                            firearmId?: string;
+                            /**
+                             * @description The task that read the page.
+                             * @example verify:firearms:glock-g17-gen5
+                             */
+                            task?: string;
+                            /**
+                             * @description The record columns confirmed.
+                             * @example [
+                             *       "barrel_length_mm",
+                             *       "weight_empty_g"
+                             *     ]
+                             */
+                            fields?: string[];
+                            /** @description Each confirmed figure with the maker's own sentence. */
+                            confirmed?: {
+                                /**
+                                 * @description The record column confirmed.
+                                 * @example barrel_length_mm
+                                 */
+                                field: string;
+                                /**
+                                 * @description The record's value the page agrees with, in the column's own unit.
+                                 * @example 114
+                                 */
+                                value: number | string | null;
+                                /**
+                                 * @description The sentence on the maker's page that states it, as found on the page.
+                                 * @example Barrel length 114 mm
+                                 */
+                                quote: string;
+                            }[];
+                            /**
+                             * @description The maker page read.
+                             * @example https://us.glock.com/en/pistols/g17-gen5
+                             */
+                            source?: string | null;
+                            /**
+                             * @description The day it was accepted.
+                             * @example 2026-09-25
+                             */
+                            verifiedAt?: string | null;
+                        }[];
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listDataSources: {
+        parameters: {
+            query?: {
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+                /**
+                 * @description Only sites whose host, or whose maker ids, contain this.
+                 * @example sig
+                 */
+                q?: string;
+                /**
+                 * @description Only one kind of source.
+                 * @example government
+                 */
+                kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                /**
+                 * @description Only one tier.
+                 * @example authority
+                 */
+                tier?: "authority" | "classified" | "unclassified";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List cited sources */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: {
+                            /**
+                             * @description The site, without `www.`; an archived copy counts as the site it captured.
+                             * @example sigsauer.com
+                             */
+                            host?: string;
+                            /**
+                             * @description What kind of source it is, in the source hierarchy.
+                             * @example manufacturer
+                             * @enum {string}
+                             */
+                            kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                            /**
+                             * @description The kind's place in the hierarchy: 0 is the strongest (a maker's own page), 8 the weakest (unclassified).
+                             * @example 0
+                             */
+                            rank?: number;
+                            /**
+                             * @description Why it has that kind: classed by a person from the site's own pages, a catalogued maker's own website, a .gov or .mil domain, or not yet classed.
+                             * @example declared
+                             * @enum {string}
+                             */
+                            basis?: "declared" | "maker" | "rule" | "unclassified";
+                            /**
+                             * @description `authority` for a maker's own site, a standards body or a government; `classified` for every other kind a person has classed; `unclassified` otherwise.
+                             * @example authority
+                             * @enum {string}
+                             */
+                            tier?: "authority" | "classified" | "unclassified";
+                            /**
+                             * @description How many citations in the catalogue point at it.
+                             * @example 200
+                             */
+                            citations?: number;
+                            /**
+                             * @description How many records of each catalog cite it at least once.
+                             * @example {
+                             *       "firearms": 184,
+                             *       "manufacturers": 1
+                             *     }
+                             */
+                            records?: {
+                                [key: string]: number;
+                            };
+                            /**
+                             * @description For a maker's own site, the manufacturer ids publishing from it.
+                             * @example [
+                             *       "sig-sauer"
+                             *     ]
+                             */
+                            makers?: string[];
+                            /**
+                             * @description What the site said it was when a person classed it, where one did.
+                             * @example title "Chapuis USA Official Site"; maker's official US site
+                             */
+                            evidence?: string;
+                        }[];
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getDataSourcesSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summarise cited sources */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description The registry as a whole: the sites cited, the citations, and how many sites are classed. */
+                            totals?: {
+                                /**
+                                 * @description Sites cited.
+                                 * @example 1873
+                                 */
+                                hosts?: number;
+                                /**
+                                 * @description Citations.
+                                 * @example 27184
+                                 */
+                                citations?: number;
+                                /**
+                                 * @description Sites that are authorities.
+                                 * @example 556
+                                 */
+                                authority?: number;
+                                /**
+                                 * @description Sites not yet classed.
+                                 * @example 901
+                                 */
+                                unclassified?: number;
+                            };
+                            /** @description Every kind, strongest first. */
+                            kinds?: {
+                                /**
+                                 * @description The kind.
+                                 * @example manufacturer
+                                 * @enum {string}
+                                 */
+                                kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                                /**
+                                 * @description Its place in the hierarchy: 0 is the strongest.
+                                 * @example 0
+                                 */
+                                rank?: number;
+                                /**
+                                 * @description What it is called.
+                                 * @example Manufacturer
+                                 */
+                                label?: string;
+                                /**
+                                 * @description What it means.
+                                 * @example The maker's own product page, manual, datasheet or catalogue.
+                                 */
+                                description?: string;
+                                /**
+                                 * @description Example sites.
+                                 * @example [
+                                 *       "glock.com"
+                                 *     ]
+                                 */
+                                examples?: string[];
+                                /**
+                                 * @description Sites of this kind the catalogue cites.
+                                 * @example 501
+                                 */
+                                hosts?: number;
+                                /**
+                                 * @description Citations of this kind.
+                                 * @example 5676
+                                 */
+                                citations?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getDataSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description A host (`us.glock.com`) or a URL-encoded page URL.
+                 * @example sigsauer.com
+                 */
+                host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get one cited source */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description Where the record came from: a curated entry, an inference, or an import. */
+                            source?: {
+                                /**
+                                 * @description The site, without `www.`; an archived copy counts as the site it captured.
+                                 * @example sigsauer.com
+                                 */
+                                host?: string;
+                                /**
+                                 * @description What kind of source it is, in the source hierarchy.
+                                 * @example manufacturer
+                                 * @enum {string}
+                                 */
+                                kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                                /**
+                                 * @description The kind's place in the hierarchy: 0 is the strongest (a maker's own page), 8 the weakest (unclassified).
+                                 * @example 0
+                                 */
+                                rank?: number;
+                                /**
+                                 * @description Why it has that kind: classed by a person from the site's own pages, a catalogued maker's own website, a .gov or .mil domain, or not yet classed.
+                                 * @example declared
+                                 * @enum {string}
+                                 */
+                                basis?: "declared" | "maker" | "rule" | "unclassified";
+                                /**
+                                 * @description `authority` for a maker's own site, a standards body or a government; `classified` for every other kind a person has classed; `unclassified` otherwise.
+                                 * @example authority
+                                 * @enum {string}
+                                 */
+                                tier?: "authority" | "classified" | "unclassified";
+                                /**
+                                 * @description How many citations in the catalogue point at it.
+                                 * @example 200
+                                 */
+                                citations?: number;
+                                /**
+                                 * @description How many records of each catalog cite it at least once.
+                                 * @example {
+                                 *       "firearms": 184,
+                                 *       "manufacturers": 1
+                                 *     }
+                                 */
+                                records?: {
+                                    [key: string]: number;
+                                };
+                                /**
+                                 * @description For a maker's own site, the manufacturer ids publishing from it.
+                                 * @example [
+                                 *       "sig-sauer"
+                                 *     ]
+                                 */
+                                makers?: string[];
+                                /**
+                                 * @description What the site said it was when a person classed it, where one did.
+                                 * @example title "Chapuis USA Official Site"; maker's official US site
+                                 */
+                                evidence?: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listDataOutcomes: {
+        parameters: {
+            query?: {
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+                /**
+                 * @description Only results accepted on or after this ISO date or timestamp
+                 * @example 2026-09-25
+                 */
+                since?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List accepted results on catalogue tasks */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: {
+                            /**
+                             * @description The task.
+                             * @example gap:quality.barrel_length_mm:glock-17c
+                             */
+                            taskKey?: string;
+                            /**
+                             * @description A value to find, or a finding to judge.
+                             * @example gap
+                             * @enum {string}
+                             */
+                            kind?: "gap" | "contradiction";
+                            /**
+                             * @description The catalogue the record is in.
+                             * @example firearms
+                             */
+                            entity?: string;
+                            /**
+                             * @description The record.
+                             * @example glock-17c
+                             */
+                            subject?: string;
+                            /**
+                             * @description The record column, on a value to find.
+                             * @example barrel_length_mm
+                             */
+                            field?: string | null;
+                            /**
+                             * @description The check suite that raised it.
+                             * @example integrity
+                             */
+                            suite?: string;
+                            /**
+                             * @description The check that raised it.
+                             * @example firearm-removed-values-researched
+                             */
+                            check?: string;
+                            /**
+                             * @description The finding's key within its check.
+                             * @example glock-17c figures
+                             */
+                            key?: string;
+                            /**
+                             * @description Found, looked for and not found, or right as it stands.
+                             * @example resolved
+                             * @enum {string}
+                             */
+                            outcome?: "resolved" | "unverifiable" | "not_a_fault";
+                            /**
+                             * @description The value found, in the column's own unit.
+                             * @example 114
+                             */
+                            value?: number | string | null;
+                            /**
+                             * @description The value as the page writes it, unit included.
+                             * @example 4.49 in
+                             */
+                            stated?: string | null;
+                            /** @description The page read and its own words for the value. */
+                            evidence?: {
+                                /**
+                                 * @description The page read.
+                                 * @example https://us.glock.com/en/pistols/g17c
+                                 */
+                                url: string;
+                                /**
+                                 * @description The words on the page that state it.
+                                 * @example Barrel Length 4.49 in
+                                 */
+                                quote: string;
+                            }[];
+                            /**
+                             * @description The agent's reasoning.
+                             * @example The maker page lists the barrel length in its specification table.
+                             */
+                            reasoning?: string | null;
+                            /**
+                             * @description The agent that worked it.
+                             * @example redback
+                             */
+                            agent?: string | null;
+                            /**
+                             * @description When it was accepted.
+                             * @example 2026-09-25T10:12:00.000Z
+                             */
+                            reviewedAt?: string | null;
+                        }[];
+                        pagination?: components["schemas"]["Pagination"];
                     };
                 };
             };
@@ -12323,11 +14243,14 @@ export interface operations {
     };
     getDataTask: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description `research` adds what the check found (`research`, as the list gives it) and the accepted decision (`decision`). */
+                include?: "research";
+            };
             header?: never;
             path: {
                 /**
-                 * @description The task id, as the list reports it.
+                 * @description The task, by its key as the list reports it or by its number: `1204` and its key load the same task.
                  * @example contradiction:caliber-confidence-has-a-source:12-gauge-3-5
                  */
                 taskKey: string;
@@ -12339,6 +14262,12 @@ export interface operations {
             /** @description Get one data remediation task */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12354,6 +14283,57 @@ export interface operations {
                             task?: {
                                 [key: string]: unknown;
                             };
+                            /** @description With `include=research` only: what the check found, in the shape the list gives it. */
+                            research?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description With `include=research` only: what was decided, once a person accepted it; null before that, and on a task closed because the record was corrected. */
+                            decision?: {
+                                /**
+                                 * @description Found, looked for and not found, or right as it stands.
+                                 * @example resolved
+                                 * @enum {string}
+                                 */
+                                outcome?: "resolved" | "unverifiable" | "not_a_fault";
+                                /**
+                                 * @description The value written to the record, where there is one.
+                                 * @example 102
+                                 */
+                                value?: string | number | null;
+                                /**
+                                 * @description The value as the page states it.
+                                 * @example 4 in
+                                 */
+                                stated?: string | null;
+                                /** @description The quotes the decision rests on. */
+                                evidence?: {
+                                    /**
+                                     * @description The page.
+                                     * @example https://example.com/spec
+                                     */
+                                    url?: string;
+                                    /**
+                                     * @description Its words.
+                                     * @example Barrel length: 4 in
+                                     */
+                                    quote?: string;
+                                }[];
+                                /**
+                                 * @description The worker's reasoning.
+                                 * @example The maker page lists the barrel length in its specification table.
+                                 */
+                                reasoning?: string | null;
+                                /**
+                                 * @description The agent that worked it, or null for the team.
+                                 * @example redback
+                                 */
+                                agent?: string | null;
+                                /**
+                                 * @description When it was accepted.
+                                 * @example 2026-09-25T10:12:00.000Z
+                                 */
+                                reviewedAt?: string | null;
+                            } | null;
                         };
                     };
                 };
@@ -12379,6 +14359,12 @@ export interface operations {
             /** @description List data quality runs */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12469,6 +14455,12 @@ export interface operations {
             /** @description List records missing a field */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12532,6 +14524,12 @@ export interface operations {
             /** @description List records failing a check */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12586,6 +14584,12 @@ export interface operations {
             /** @description Get per-record confidence scores */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12599,7 +14603,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Slug of the firearm.
-                             * @example glock-17-gen5
+                             * @example glock-g17-gen5
                              */
                             id?: string;
                             /**
@@ -12639,6 +14643,12 @@ export interface operations {
             /** @description Get the balance report */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12719,6 +14729,12 @@ export interface operations {
             /** @description Get a tier list for one stat */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -12887,6 +14903,12 @@ export interface operations {
             /** @description Compare two firearms on game stats */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13100,6 +15122,12 @@ export interface operations {
             /** @description Get a roster for a gameplay role */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13198,6 +15226,12 @@ export interface operations {
             /** @description Get the distribution of one game stat */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13315,6 +15349,12 @@ export interface operations {
             /** @description List your favorites */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13349,6 +15389,12 @@ export interface operations {
             /** @description List your favorite ids */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13380,7 +15426,7 @@ export interface operations {
             path: {
                 /**
                  * @description Firearm slug
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 firearmId: string;
             };
@@ -13391,6 +15437,12 @@ export interface operations {
             /** @description Add a favorite */
             201: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13409,7 +15461,7 @@ export interface operations {
                             favorited?: boolean;
                             /**
                              * @description Slug of the firearm this row belongs to.
-                             * @example glock-17-gen5
+                             * @example glock-g17-gen5
                              */
                             firearmId?: string;
                         };
@@ -13431,7 +15483,7 @@ export interface operations {
             path: {
                 /**
                  * @description Firearm slug
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 firearmId: string;
             };
@@ -13442,6 +15494,12 @@ export interface operations {
             /** @description Remove a favorite */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13460,7 +15518,7 @@ export interface operations {
                             favorited?: boolean;
                             /**
                              * @description Slug of the firearm this row belongs to.
-                             * @example glock-17-gen5
+                             * @example glock-g17-gen5
                              */
                             firearmId?: string;
                         };
@@ -13492,6 +15550,12 @@ export interface operations {
             /** @description List your data reports */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13526,7 +15590,7 @@ export interface operations {
                 "application/json": {
                     /**
                      * @description Slug of the firearm this row belongs to.
-                     * @example glock-17-gen5
+                     * @example glock-g17-gen5
                      */
                     firearmId: string;
                     /**
@@ -13560,6 +15624,12 @@ export interface operations {
             /** @description The created report */
             201: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13604,6 +15674,12 @@ export interface operations {
             /** @description List your support tickets */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13665,6 +15741,12 @@ export interface operations {
             /** @description The created ticket */
             201: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13693,7 +15775,7 @@ export interface operations {
             path: {
                 /**
                  * @description Support ticket id
-                 * @example d3f1c2a0-...
+                 * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
                  */
                 ticketId: string;
             };
@@ -13704,6 +15786,12 @@ export interface operations {
             /** @description Get a support ticket */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13724,7 +15812,7 @@ export interface operations {
                                 id?: number;
                                 /**
                                  * @description Id of the ticket.
-                                 * @example d3f1c2a0-...
+                                 * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
                                  */
                                 ticket_id?: string;
                                 /**
@@ -13752,7 +15840,7 @@ export interface operations {
                                 id?: number;
                                 /**
                                  * @description Id of the ticket the file belongs to.
-                                 * @example d3f1c2a0-...
+                                 * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
                                  */
                                 ticket_id?: string;
                                 /**
@@ -13810,7 +15898,7 @@ export interface operations {
             path: {
                 /**
                  * @description Support ticket id
-                 * @example d3f1c2a0-...
+                 * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
                  */
                 ticketId: string;
             };
@@ -13831,6 +15919,12 @@ export interface operations {
             /** @description Reply to a support ticket */
             201: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13849,7 +15943,7 @@ export interface operations {
                             id?: number;
                             /**
                              * @description Id of the ticket the reply was added to.
-                             * @example d3f1c2a0-...
+                             * @example d3f1c2a0-5b7e-4c1a-9f2d-6e8b3a4c7d10
                              */
                             ticket_id?: string;
                             /**
@@ -13898,6 +15992,12 @@ export interface operations {
             /** @description Get your API usage */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -13912,23 +16012,74 @@ export interface operations {
                             /** @description Totals for the reported period, meaning the current billing month, or the trailing window when `days` is given. */
                             currentMonth?: {
                                 /**
-                                 * @description Requests counted in the reported period across every key on the account.
+                                 * @description Requests served in the reported period across every key on the account. Calls a limit refused with a 429 are not counted: they spent nothing, and this is the figure the monthly allowance is enforced against.
                                  * @example 1284
                                  */
                                 used?: number;
                                 /**
-                                 * @description Requests your plan allows in the period.
+                                 * @description Requests your plan allows in the period. Enforced: once `used` reaches it every call is refused with `MONTHLY_CAP_EXCEEDED` until `resetsAt`.
                                  * @example 25000
                                  */
                                 limit?: number;
+                                /**
+                                 * @description Requests left in the period, never below zero.
+                                 * @example 23716
+                                 */
+                                remaining?: number;
                                 /**
                                  * @description Share of records, 0 to 100.
                                  * @example 5.1
                                  */
                                 percentage?: number;
                                 /**
-                                 * @description When the counter next returns to zero, ISO 8601 UTC.
+                                 * @description When the monthly counter returns to zero: midnight UTC on the first of the next month, for every plan. The same instant as `X-Monthly-Reset`.
                                  * @example 2026-10-01T00:00:00.000Z
+                                 */
+                                resetsAt?: string;
+                            };
+                            /** @description What is left of today, against the limit that is enforced. Each key is counted and limited on its own. */
+                            daily?: {
+                                /**
+                                 * @description Requests one key may make per UTC day on this plan. The limit applies to each key separately, which is why there is no account total to compare it with. Null when the plan has no daily ceiling.
+                                 * @example 5000
+                                 */
+                                limitPerKey?: number | null;
+                                /**
+                                 * @description Requests made today (UTC) across every key on the account. Not comparable with `limitPerKey` unless the account has one key: each key is held to the limit on its own.
+                                 * @example 1840
+                                 */
+                                usedToday?: number;
+                                /** @description The key nearest its daily limit, or null when no key has made a request today. */
+                                busiestKeyToday?: {
+                                    /**
+                                     * @description Id of the key closest to its daily limit today.
+                                     * @example key_01H8...
+                                     */
+                                    keyId?: string;
+                                    /**
+                                     * @description The label you gave the key.
+                                     * @example Production
+                                     */
+                                    keyName?: string;
+                                    /**
+                                     * @description Requests that key made today. It counts calls the limit refused too, so it can exceed `limitPerKey`: a figure well past the limit means that key kept calling after being told to stop.
+                                     * @example 1670
+                                     */
+                                    used?: number;
+                                    /**
+                                     * @description Requests that key has left today, never below zero. Null when the plan has no daily ceiling.
+                                     * @example 3330
+                                     */
+                                    remaining?: number | null;
+                                    /**
+                                     * @description Share of `limitPerKey` that key has used, rounded. It can exceed 100.
+                                     * @example 33
+                                     */
+                                    percentage?: number;
+                                } | null;
+                                /**
+                                 * @description When every daily counter returns to zero: the next midnight UTC. The same instant as `X-Daily-Reset`.
+                                 * @example 2026-09-18T00:00:00.000Z
                                  */
                                 resetsAt?: string;
                             };
@@ -14031,6 +16182,64 @@ export interface operations {
                                  */
                                 operationsAvailable?: number;
                             };
+                            /** @description Calls to endpoints above your plan, attached to the account so every key draws on the same balance. Every new account starts with a one-time grant covering any endpoint up to Studio, and the team can give more. A call spent this way is served exactly as the endpoint's own plan would be (full fields, that plan's paging depth), is marked with an `X-Endpoint-Credit: spent` header, and still counts against your plan's per-minute and daily limits. A call that fails, or answers `304`, is given back. */
+                            endpointCredits?: {
+                                /**
+                                 * @description Calls left across every credit that can still be spent.
+                                 * @example 50
+                                 */
+                                remaining?: number;
+                                /** @description Every credit the account has had, newest first, spent ones included. */
+                                credits?: {
+                                    /**
+                                     * @description Id of the credit.
+                                     * @example 9f2c1e0a-5b7d-4c1e-8a3f-2d6b9e4c7a10
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description `welcome` for the one-time grant every account receives, `staff` for a credit the team gave you.
+                                     * @example welcome
+                                     */
+                                    source?: string;
+                                    /** @description The operations it covers, or null when it covers everything up to `maxTier`. */
+                                    operations?: string[] | null;
+                                    /**
+                                     * @description The highest plan whose endpoints it covers, or null when it names operations.
+                                     * @example studio
+                                     */
+                                    maxTier?: string | null;
+                                    /**
+                                     * @description Calls the credit was given.
+                                     * @example 50
+                                     */
+                                    callsGranted?: number;
+                                    /**
+                                     * @description Calls spent so far.
+                                     * @example 12
+                                     */
+                                    callsUsed?: number;
+                                    /**
+                                     * @description Calls left on it. Zero once it is spent, expired or withdrawn.
+                                     * @example 38
+                                     */
+                                    callsRemaining?: number;
+                                    /**
+                                     * @description When it lapses, ISO 8601 UTC, or null when it does not.
+                                     * @example 2026-12-31T00:00:00.000Z
+                                     */
+                                    expiresAt?: string | null;
+                                    /**
+                                     * @description `active`, `spent`, `expired` or `revoked`.
+                                     * @example active
+                                     */
+                                    status?: string;
+                                    /**
+                                     * @description When it was given.
+                                     * @example 2026-09-10 08:30:00
+                                     */
+                                    createdAt?: string;
+                                }[];
+                            };
                             /** @description Requests per day over the reported period, oldest first. Days with no traffic are omitted. */
                             dailyBreakdown?: {
                                 /**
@@ -14076,6 +16285,16 @@ export interface operations {
                                  * @example 38
                                  */
                                 mcpToday?: number;
+                                /**
+                                 * @description Requests this key made today (UTC), the figure its daily limit is held against. Counts calls the limit refused.
+                                 * @example 1670
+                                 */
+                                today?: number;
+                                /**
+                                 * @description Requests this key has left today, never below zero. Null when the plan has no daily ceiling.
+                                 * @example 3330
+                                 */
+                                remainingToday?: number | null;
                             }[];
                             /**
                              * @description How many API keys the account holds.
@@ -14090,10 +16309,15 @@ export interface operations {
                                  */
                                 name?: string;
                                 /**
-                                 * @description Monthly request allowance on this plan.
+                                 * @description Monthly request allowance on this plan, enforced for the whole account.
                                  * @example 150000
                                  */
                                 requestsPerMonth?: number;
+                                /**
+                                 * @description Requests each key may make per UTC day on this plan: the limit that is enforced. Null when the plan has no daily ceiling.
+                                 * @example 10000
+                                 */
+                                requestsPerDay?: number | null;
                                 /**
                                  * @description Requests per minute this plan allows.
                                  * @example 300
@@ -14133,6 +16357,12 @@ export interface operations {
             /** @description List your webhook endpoints */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14184,6 +16414,12 @@ export interface operations {
             /** @description The created endpoint, including its signing secret */
             201: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14212,7 +16448,7 @@ export interface operations {
             path: {
                 /**
                  * @description Webhook endpoint id
-                 * @example wh_01H8...
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
                  */
                 endpointId: string;
             };
@@ -14223,6 +16459,12 @@ export interface operations {
             /** @description Get a webhook endpoint */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14251,7 +16493,7 @@ export interface operations {
             path: {
                 /**
                  * @description Webhook endpoint id
-                 * @example wh_01H8...
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
                  */
                 endpointId: string;
             };
@@ -14284,6 +16526,12 @@ export interface operations {
             /** @description Update a webhook endpoint */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14313,7 +16561,7 @@ export interface operations {
             path: {
                 /**
                  * @description Webhook endpoint id
-                 * @example wh_01H8...
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
                  */
                 endpointId: string;
             };
@@ -14324,6 +16572,12 @@ export interface operations {
             /** @description Delete a webhook endpoint */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14342,7 +16596,7 @@ export interface operations {
                             deleted?: boolean;
                             /**
                              * @description Id of the deleted endpoint.
-                             * @example wh_01H8...
+                             * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
                              */
                             id?: string;
                         };
@@ -14364,7 +16618,7 @@ export interface operations {
             path: {
                 /**
                  * @description Webhook endpoint id
-                 * @example wh_01H8...
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
                  */
                 endpointId: string;
             };
@@ -14375,6 +16629,12 @@ export interface operations {
             /** @description Send a test delivery */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14422,6 +16682,12 @@ export interface operations {
             /** @description List countries of origin */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14472,6 +16738,12 @@ export interface operations {
             /** @description Get a country arsenal */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14513,6 +16785,12 @@ export interface operations {
             /** @description List armed conflicts */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14570,6 +16848,12 @@ export interface operations {
             /** @description List snapshot versions */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14614,6 +16898,12 @@ export interface operations {
             /** @description List firearms in a snapshot */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14649,7 +16939,7 @@ export interface operations {
                 version: string;
                 /**
                  * @description Firearm slug
-                 * @example glock-17-gen5
+                 * @example glock-g17-gen5
                  */
                 id: string;
             };
@@ -14660,6 +16950,12 @@ export interface operations {
             /** @description Get one firearm from a snapshot */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14699,6 +16995,12 @@ export interface operations {
             /** @description Get a shared collection */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14771,6 +17073,12 @@ export interface operations {
             /** @description List changelog entries */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14809,6 +17117,12 @@ export interface operations {
             /** @description Get a changelog entry */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14847,6 +17161,12 @@ export interface operations {
             /** @description List site updates */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14874,7 +17194,7 @@ export interface operations {
             path: {
                 /**
                  * @description The update slug
-                 * @example firearm-intake-paused
+                 * @example faster-corrections-and-published-data-checks
                  */
                 id: string;
             };
@@ -14885,6 +17205,12 @@ export interface operations {
             /** @description Get a site update */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14919,6 +17245,12 @@ export interface operations {
             /** @description List active site notices */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14953,6 +17285,12 @@ export interface operations {
             /** @description Latest SDK example verification run */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14995,6 +17333,12 @@ export interface operations {
             /** @description Latest example verification runs */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15020,8 +17364,8 @@ export interface operations {
     getContractBadge: {
         parameters: {
             query?: {
-                /** @description Which product to report: `api` for this REST API, `mcp` for the hosted MCP server. */
-                surface?: "api" | "mcp";
+                /** @description Which product or data suite to report: `api` for this REST API, `mcp` for the hosted MCP server, `fitment` for the attachment compatibility suite, `catalogue` for the catalogue record checks: every file against its schema, no company under two ids, and no firearm whose fields cannot all be true, `integrity` for the integrity checks: figures, prose and feature lists copied between unrelated guns, citations that are not evidence, timelines, weight against size, and confidence against evidence, `plausibility` for the plausibility checks: a loaded weight against the empty one and its magazine, a gun older than its cartridge, figures in the wrong unit, energy against velocity, variants that disagree with their family, and the same gun filed twice, `anomalies` for the statistical anomaly checks: a figure unusually far from its family's or its cohort's median, and a barrel an unusual share of its gun's length; each a figure to verify, not one shown wrong, `cartridges` for the cartridge checks: energy against bullet and velocity, pressure in MPa against psi, dimensions no case can have, a bullet against the calibre its name states, a cartridge older than its parent, and each load against its cartridge, `materials` for the materials registry: every material's density quoted from a page that still states it, within the range it declares, and every material value the catalogue uses covered, so the mass checks read sourced densities, `corroboration` for the corroboration checks: firearm figures compared with a second, independent source (Wikidata), `sources` for the source checks: how many records cite their own maker or another authority, and which heavily cited sites the source hierarchy cannot yet name, `manufacturers` for the manufacturer checks: every manufacturer record held against Wikidata for its website, founding year, country and whether it still trades, `links` for the link checks: every manufacturer website and every cited source asked whether it still answers and is still the page cited. */
+                surface?: "api" | "mcp" | "fitment" | "catalogue" | "integrity" | "plausibility" | "anomalies" | "cartridges" | "materials" | "corroboration" | "sources" | "manufacturers" | "links";
                 /** @description Which environment's run to report. Production unless asked otherwise. */
                 env?: "production" | "staging" | "local";
                 /**
@@ -15044,6 +17388,12 @@ export interface operations {
             /** @description An SVG badge for the latest run */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15051,6 +17401,163 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listContractFindings: {
+        parameters: {
+            query: {
+                /**
+                 * @description The check id, as the run lists it under `systemChecks`.
+                 * @example firearm-singleshot-capacity
+                 */
+                check: string;
+                /**
+                 * @description Which product or data suite the run measured: `api` for this REST API, `mcp` for the hosted MCP server, `fitment` for the attachment compatibility suite, `catalogue` for the catalogue record checks: every file against its schema, no company under two ids, and no firearm whose fields cannot all be true, `integrity` for the integrity checks: figures, prose and feature lists copied between unrelated guns, citations that are not evidence, timelines, weight against size, and confidence against evidence, `plausibility` for the plausibility checks: a loaded weight against the empty one and its magazine, a gun older than its cartridge, figures in the wrong unit, energy against velocity, variants that disagree with their family, and the same gun filed twice, `anomalies` for the statistical anomaly checks: a figure unusually far from its family's or its cohort's median, and a barrel an unusual share of its gun's length; each a figure to verify, not one shown wrong, `cartridges` for the cartridge checks: energy against bullet and velocity, pressure in MPa against psi, dimensions no case can have, a bullet against the calibre its name states, a cartridge older than its parent, and each load against its cartridge, `materials` for the materials registry: every material's density quoted from a page that still states it, within the range it declares, and every material value the catalogue uses covered, so the mass checks read sourced densities, `corroboration` for the corroboration checks: firearm figures compared with a second, independent source (Wikidata), `sources` for the source checks: how many records cite their own maker or another authority, and which heavily cited sites the source hierarchy cannot yet name, `manufacturers` for the manufacturer checks: every manufacturer record held against Wikidata for its website, founding year, country and whether it still trades, `links` for the link checks: every manufacturer website and every cited source asked whether it still answers and is still the page cited. Defaults to `api`.
+                 * @example catalogue
+                 */
+                surface?: "api" | "mcp" | "fitment" | "catalogue" | "integrity" | "plausibility" | "anomalies" | "cartridges" | "materials" | "corroboration" | "sources" | "manufacturers" | "links";
+                /**
+                 * @description Which environment to report. Production unless asked otherwise.
+                 * @example production
+                 */
+                env?: "production" | "staging" | "local";
+                /**
+                 * @description The page, from 1.
+                 * @example 1
+                 */
+                page?: number;
+                /**
+                 * @description Findings per page.
+                 * @example 100
+                 */
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One check's findings from the latest run */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /**
+                             * @description The check.
+                             * @example firearm-singleshot-capacity
+                             */
+                            check?: string;
+                            /**
+                             * @description When the run started.
+                             * @example 2026-09-25T02:00:00.000Z
+                             */
+                            ranAt?: string;
+                            /**
+                             * @description How many the check found in all.
+                             * @example 7
+                             */
+                            found?: number;
+                            /**
+                             * @description How many findings the run published; the rest were not stored.
+                             * @example 7
+                             */
+                            published?: number;
+                            /**
+                             * @description This page.
+                             * @example 1
+                             */
+                            page?: number;
+                            /**
+                             * @description Findings per page.
+                             * @example 100
+                             */
+                            perPage?: number;
+                            /**
+                             * @description How many pages there are.
+                             * @example 1
+                             */
+                            pages?: number;
+                            /**
+                             * @description The findings on this page, one line each, the record first.
+                             * @example [
+                             *       "winchester-52"
+                             *     ]
+                             */
+                            items?: string[];
+                            /** @description Beside each item, where the record's data task for this check has got to, or null when it has none. */
+                            tasks?: ({
+                                /**
+                                 * @description Queued for the data agent, being worked, proposed and waiting on a person, or accepted and on its way into the catalogue.
+                                 * @example queued
+                                 * @enum {string}
+                                 */
+                                stage: "queued" | "working" | "proposed" | "accepted";
+                                /**
+                                 * @description Research a value from a source, or review a judgement.
+                                 * @example review
+                                 * @enum {string}
+                                 */
+                                action: "research" | "review";
+                                /**
+                                 * @description How many tasks the record has for this check; a research task is one per field.
+                                 * @example 1
+                                 */
+                                tasks: number;
+                                /**
+                                 * @description The agent working it, while it is worked or proposed.
+                                 * @example redback
+                                 */
+                                agent: string | null;
+                                /** @description Each task behind the mark, most active first. Load one at `/v1/data/tasks/{number}`. */
+                                list: {
+                                    /**
+                                     * @description The task's number.
+                                     * @example 1204
+                                     */
+                                    number: number | null;
+                                    /**
+                                     * @description The task's key.
+                                     * @example contradiction:quality.firearm-singleshot-capacity:winchester-52
+                                     */
+                                    key: string;
+                                    /**
+                                     * @description The record field it is about, where it is about one.
+                                     * @example magazine_capacity
+                                     */
+                                    field: string | null;
+                                    /**
+                                     * @description Where it has got to.
+                                     * @example queued
+                                     * @enum {string}
+                                     */
+                                    stage: "queued" | "working" | "proposed" | "accepted";
+                                }[];
+                            } | null)[];
+                        };
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["InternalError"];
         };
@@ -15064,10 +17571,10 @@ export interface operations {
                  */
                 env?: "production" | "staging" | "local";
                 /**
-                 * @description Which product the run measured: `api` for this REST API, `mcp` for the hosted MCP server. Defaults to `api`.
+                 * @description Which product or data suite the run measured: `api` for this REST API, `mcp` for the hosted MCP server, `fitment` for the attachment compatibility suite, `catalogue` for the catalogue record checks: every file against its schema, no company under two ids, and no firearm whose fields cannot all be true, `integrity` for the integrity checks: figures, prose and feature lists copied between unrelated guns, citations that are not evidence, timelines, weight against size, and confidence against evidence, `plausibility` for the plausibility checks: a loaded weight against the empty one and its magazine, a gun older than its cartridge, figures in the wrong unit, energy against velocity, variants that disagree with their family, and the same gun filed twice, `anomalies` for the statistical anomaly checks: a figure unusually far from its family's or its cohort's median, and a barrel an unusual share of its gun's length; each a figure to verify, not one shown wrong, `cartridges` for the cartridge checks: energy against bullet and velocity, pressure in MPa against psi, dimensions no case can have, a bullet against the calibre its name states, a cartridge older than its parent, and each load against its cartridge, `materials` for the materials registry: every material's density quoted from a page that still states it, within the range it declares, and every material value the catalogue uses covered, so the mass checks read sourced densities, `corroboration` for the corroboration checks: firearm figures compared with a second, independent source (Wikidata), `sources` for the source checks: how many records cite their own maker or another authority, and which heavily cited sites the source hierarchy cannot yet name, `manufacturers` for the manufacturer checks: every manufacturer record held against Wikidata for its website, founding year, country and whether it still trades, `links` for the link checks: every manufacturer website and every cited source asked whether it still answers and is still the page cited. Defaults to `api`.
                  * @example api
                  */
-                surface?: "api" | "mcp";
+                surface?: "api" | "mcp" | "fitment" | "catalogue" | "integrity" | "plausibility" | "anomalies" | "cartridges" | "materials" | "corroboration" | "sources" | "manufacturers" | "links";
             };
             header?: never;
             path?: never;
@@ -15078,6 +17585,12 @@ export interface operations {
             /** @description The latest run for that environment. `run` is null when nothing has been checked there yet, which is deliberately different from a run where everything failed. */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15123,6 +17636,12 @@ export interface operations {
             /** @description Look up a documented operation */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15335,6 +17854,12 @@ export interface operations {
             /** @description Get a documented code sample */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15436,6 +17961,12 @@ export interface operations {
             /** @description Get plan limits */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15529,8 +18060,8 @@ export interface operations {
                                  */
                                 rateLimited?: number;
                                 /**
-                                 * @description The `Retry-After` sent when the daily allowance is spent.
-                                 * @example 3600
+                                 * @description The longest `Retry-After` a daily refusal sends. The value sent is the seconds left until the next midnight UTC, when the counters return to zero, so it is never more than this.
+                                 * @example 86400
                                  */
                                 dailyCapReached?: number;
                             };
@@ -15564,6 +18095,12 @@ export interface operations {
             /** @description List the documentation guides */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15660,6 +18197,12 @@ export interface operations {
             /** @description Search the documentation guides */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15754,6 +18297,12 @@ export interface operations {
             /** @description Read a documentation guide */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15849,6 +18398,12 @@ export interface operations {
             /** @description List blog posts */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15887,6 +18442,12 @@ export interface operations {
             /** @description Get a blog post */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -15927,6 +18488,12 @@ export interface operations {
             /** @description Get a firearm's mount interfaces */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16020,6 +18587,12 @@ export interface operations {
             /** @description List attachments that fit a firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16163,6 +18736,12 @@ export interface operations {
             /** @description List attachments */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -16221,6 +18800,12 @@ export interface operations {
             /** @description Get an attachment */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -16280,6 +18865,12 @@ export interface operations {
             /** @description List firearms an attachment fits */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16381,6 +18972,12 @@ export interface operations {
             /** @description List sellers stocking an attachment */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16427,6 +19024,12 @@ export interface operations {
             /** @description List sellers stocking a firearm */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16490,6 +19093,12 @@ export interface operations {
             /** @description List the shops this key may act for */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16568,6 +19177,12 @@ export interface operations {
             /** @description Read back your listings */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16717,6 +19332,12 @@ export interface operations {
             /** @description Push a vendor's offers */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16787,6 +19408,12 @@ export interface operations {
             /** @description Withdraw one offer */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16879,6 +19506,12 @@ export interface operations {
             /** @description Update one listing */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16929,6 +19562,12 @@ export interface operations {
             /** @description List interface standards */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -16988,6 +19627,12 @@ export interface operations {
             /** @description List firearms exposing a standard */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -17068,6 +19713,12 @@ export interface operations {
             /** @description List platforms */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -17146,6 +19797,12 @@ export interface operations {
             /** @description Get a platform */
             200: {
                 headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
                     /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
                     ETag?: string;
                     /** @description How long this response may be kept. */
@@ -17233,6 +19890,1695 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    compareLoadCarriage: {
+        parameters: {
+            query: {
+                /**
+                 * @description Comma-separated firearm slugs, maximum 5.
+                 * @example hk416,fn-scar-l
+                 */
+                ids: string;
+                /**
+                 * @description Soldier body mass in kg.
+                 * @example 80
+                 */
+                body_mass_kg?: number;
+                /** @description Body fat as a percentage of body mass; the LCDA resting rate is computed from lean mass. */
+                body_fat_pct?: number;
+                /**
+                 * @description Everything else carried, in kg: armour, pack, water.
+                 * @example 25
+                 */
+                kit_kg?: number;
+                /**
+                 * @description Full magazines carried in total, the one in the firearm included. 0 carries it unloaded.
+                 * @example 7
+                 */
+                magazines?: number;
+                /**
+                 * @description Comma-separated attachment slugs, maximum 10, added to every firearm by their recorded weight.
+                 * @example aimpoint-compm5
+                 */
+                attachments?: string;
+                /** @description Marching speed in km/h. */
+                speed_kmh?: number;
+                /** @description Slope as a percentage, rise over run: negative is downhill. */
+                grade_pct?: number;
+                /** @description Surface: `paved` (paved road or treadmill), `dirt_road` (dirt road), `light_brush` (light brush), `heavy_brush` (heavy brush), `swampy_bog` (swampy bog), `loose_sand` (loose sand). */
+                terrain?: "paved" | "dirt_road" | "light_brush" | "heavy_brush" | "swampy_bog" | "loose_sand";
+                /**
+                 * @description March distance in km.
+                 * @example 20
+                 */
+                distance_km?: number;
+                /** @description Equation: `lcda` (default) or `pandolf`, which refuses a downhill grade. */
+                model?: "lcda" | "pandolf";
+            };
+            header?: {
+                /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compare the cost of marching with each firearm */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description The equation behind every figure in the answer. */
+                            model?: {
+                                /**
+                                 * @description The model the costs were computed with.
+                                 * @example lcda
+                                 */
+                                id?: string;
+                                /**
+                                 * @description The model by name.
+                                 * @example LCDA backpacking equation with the LCDA graded-walking term
+                                 */
+                                name?: string;
+                                /** @description The equation as written, with its units, so the figures can be reproduced. */
+                                equation?: string;
+                                /** @description Where the equation and its constants are from. */
+                                citations?: {
+                                    /**
+                                     * @description Authors as the paper lists them.
+                                     * @example Looney DP, Lavoie EM, Vangala SV, Holden LD, Figueiredo PS, Friedl KE, et al.
+                                     */
+                                    authors?: string;
+                                    /**
+                                     * @description Year of publication.
+                                     * @example 2022
+                                     */
+                                    year?: number;
+                                    /**
+                                     * @description Title of the paper.
+                                     * @example Modeling the Metabolic Costs of Heavy Military Backpacking
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Journal, volume, issue and pages.
+                                     * @example Medicine & Science in Sports & Exercise 54(4):646-654
+                                     */
+                                    journal?: string;
+                                    /**
+                                     * @description Digital Object Identifier, where the paper has one.
+                                     * @example 10.1249/MSS.0000000000002833
+                                     */
+                                    doi?: string | null;
+                                }[];
+                                /** @description The range the equation was fitted on. Null for a model whose paper states none here. */
+                                validated?: {
+                                    /** @description Slowest and fastest fitted speed, in m/s. */
+                                    speedMps?: number[];
+                                    /** @description Lightest and heaviest fitted load, as a share of body mass. */
+                                    loadFraction?: number[];
+                                } | null;
+                            };
+                            /** @description The march every firearm was costed on. */
+                            march?: {
+                                /**
+                                 * @description Soldier body mass in kg.
+                                 * @example 80
+                                 */
+                                bodyMassKg?: number;
+                                /**
+                                 * @description Body fat as a percentage of body mass.
+                                 * @example 15
+                                 */
+                                bodyFatPct?: number;
+                                /**
+                                 * @description Other equipment carried, in kg.
+                                 * @example 25
+                                 */
+                                kitKg?: number;
+                                /**
+                                 * @description Full magazines carried in total.
+                                 * @example 7
+                                 */
+                                magazines?: number;
+                                /**
+                                 * @description Marching speed in km/h.
+                                 * @example 4.8
+                                 */
+                                speedKmh?: number;
+                                /**
+                                 * @description Marching speed in m/s, as the equations read it.
+                                 * @example 1.333
+                                 */
+                                speedMps?: number;
+                                /**
+                                 * @description Slope as a percentage.
+                                 * @example 0
+                                 */
+                                gradePct?: number;
+                                /**
+                                 * @description Surface id.
+                                 * @example paved
+                                 */
+                                terrain?: string;
+                                /**
+                                 * @description The terrain factor (Soule and Goldman 1972) the moving cost is multiplied by.
+                                 * @example 1
+                                 */
+                                terrainFactor?: number;
+                                /**
+                                 * @description March distance in km.
+                                 * @example 20
+                                 */
+                                distanceKm?: number;
+                                /**
+                                 * @description How long the march takes at this speed, in seconds.
+                                 * @example 15000
+                                 */
+                                durationS?: number;
+                                /** @description The query parameters not sent, answered from their defaults. */
+                                defaulted?: string[];
+                            };
+                            /** @description The attachments added to every firearm. */
+                            attachments?: {
+                                /**
+                                 * @description Attachment slug.
+                                 * @example aimpoint-compm5
+                                 */
+                                id?: string;
+                                /**
+                                 * @description Attachment name.
+                                 * @example Aimpoint CompM5
+                                 */
+                                name?: string;
+                                /**
+                                 * @description Recorded weight in grams.
+                                 * @example 148
+                                 */
+                                weightG?: number;
+                            }[];
+                            /** @description One result per firearm, in the order their ids were given. */
+                            results?: {
+                                /** @description The firearm this result is for. */
+                                firearm?: {
+                                    /**
+                                     * @description Firearm slug.
+                                     * @example hk416
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Firearm name.
+                                     * @example HK416
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description How the firearm feeds, as the catalogue records it.
+                                     * @example detachable_box
+                                     */
+                                    magazineType?: string | null;
+                                    /**
+                                     * @description Rounds in a standard magazine.
+                                     * @example 30
+                                     */
+                                    magazineCapacity?: number | null;
+                                };
+                                /** @description What is carried, piece by piece. */
+                                load?: {
+                                    /**
+                                     * @description Empty weight in grams, from the record.
+                                     * @example 3020
+                                     */
+                                    firearmEmptyG?: number | null;
+                                    /**
+                                     * @description What one full magazine adds, in grams: loaded weight less empty weight.
+                                     * @example 400
+                                     */
+                                    loadedMagazineG?: number | null;
+                                    /**
+                                     * @description Full magazines counted.
+                                     * @example 7
+                                     */
+                                    magazines?: number;
+                                    /**
+                                     * @description All the full magazines together, in grams.
+                                     * @example 2800
+                                     */
+                                    magazinesG?: number | null;
+                                    /**
+                                     * @description All the attachments together, in grams.
+                                     * @example 148
+                                     */
+                                    attachmentsG?: number;
+                                    /**
+                                     * @description The firearm, its magazines and its attachments, in grams.
+                                     * @example 5968
+                                     */
+                                    carriedG?: number | null;
+                                    /**
+                                     * @description Everything carried, kit included, in kg.
+                                     * @example 30.968
+                                     */
+                                    totalLoadKg?: number | null;
+                                    /**
+                                     * @description The total load as a share of body mass.
+                                     * @example 0.387
+                                     */
+                                    loadFraction?: number | null;
+                                    /** @description Where each firearm mass came from. */
+                                    sources?: {
+                                        /**
+                                         * @description `catalogue` when the record states the empty weight.
+                                         * @enum {string|null}
+                                         */
+                                        firearmEmptyG?: "catalogue" | "derived" | null;
+                                        /**
+                                         * @description `derived` when it was computed from the loaded and empty weights.
+                                         * @enum {string|null}
+                                         */
+                                        loadedMagazineG?: "catalogue" | "derived" | null;
+                                    };
+                                };
+                                /** @description What the march costs this soldier with this firearm. Null when a mass it needs is not recorded; `error` says which. */
+                                cost?: {
+                                    /**
+                                     * @description Metabolic rate while marching, in watts, resting rate included.
+                                     * @example 481.2
+                                     */
+                                    watts?: number;
+                                    /**
+                                     * @description The same rate per kilogram of body mass.
+                                     * @example 6.02
+                                     */
+                                    wattsPerKg?: number;
+                                    /**
+                                     * @description Energy the whole march costs, in kilojoules.
+                                     * @example 7218
+                                     */
+                                    energyKj?: number;
+                                    /**
+                                     * @description The same energy in kilocalories.
+                                     * @example 1725.2
+                                     */
+                                    energyKcal?: number;
+                                } | null;
+                                /** @description Against the option with the lightest carried load. Null on that option, on a lone firearm, and where no cost could be computed. */
+                                delta?: {
+                                    /**
+                                     * @description Grams more carried than the lightest option.
+                                     * @example 390
+                                     */
+                                    carriedG?: number;
+                                    /**
+                                     * @description Watts more than the lightest option.
+                                     * @example 6.1
+                                     */
+                                    watts?: number;
+                                    /**
+                                     * @description Kilojoules more over the march.
+                                     * @example 91.5
+                                     */
+                                    energyKj?: number;
+                                    /**
+                                     * @description Kilocalories more over the march.
+                                     * @example 21.9
+                                     */
+                                    energyKcal?: number;
+                                } | null;
+                                /** @description Where an input lies outside the fitted range, or a count needs qualifying. */
+                                warnings?: string[];
+                                /**
+                                 * @description Why this firearm could not be costed. Null when it was.
+                                 * @example null
+                                 */
+                                error?: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Your copy is current. No body is sent, and this response does not count toward the daily request allowance. */
+            304: {
+                headers: {
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description The lifetime that applied to the response you already hold. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    compareRecoil: {
+        parameters: {
+            query: {
+                /**
+                 * @description Comma-separated firearm slugs, maximum 5.
+                 * @example hk416,m4-carbine
+                 */
+                ids: string;
+                /**
+                 * @description The load every firearm fires. Without it, each fires the load its ballistic profile uses.
+                 * @example m855
+                 */
+                ammo_id?: string;
+                /** @description Which recorded weight the firearm recoils with: `loaded` or `empty`. */
+                mass?: "loaded" | "empty";
+                /** @description The load's powder charge in grams. Needs `ammo_id`. Without it the figures are a lower bound. */
+                powder_charge_g?: number;
+                /** @description The SAAMI class whose gas velocity factor applies, in place of the one read from each firearm's category: `rifle` (high powered rifles, 1.75), `shotgun` (shotguns (average length), 1.5), `shotgun_long_barrel` (shotguns (long barrel), 1.25), `handgun` (pistol & revolvers, 1.5). */
+                gas_class?: "rifle" | "shotgun" | "shotgun_long_barrel" | "handgun";
+            };
+            header?: {
+                /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compare the free recoil of each firearm */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description The formula behind every figure in the answer. */
+                            method?: {
+                                /**
+                                 * @description The method the figures were computed with.
+                                 * @example saami-free-recoil
+                                 */
+                                id?: string;
+                                /**
+                                 * @description The method by name.
+                                 * @example SAAMI free recoil
+                                 */
+                                name?: string;
+                                /** @description The equation as written, with its units, so the figures can be reproduced. */
+                                equation?: string;
+                                /** @description Where the formula and its factors are from. */
+                                citations?: {
+                                    /**
+                                     * @description Authors or the issuing body.
+                                     * @example Sporting Arms and Ammunition Manufacturers' Institute (SAAMI)
+                                     */
+                                    authors?: string;
+                                    /**
+                                     * @description Year of publication or revision.
+                                     * @example 2018
+                                     */
+                                    year?: number;
+                                    /**
+                                     * @description Title.
+                                     * @example Gun Recoil, Technical: Free Recoil Energy
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Where it is published: journal, publisher or document number.
+                                     * @example SAAMI technical sheet, Rev. 7/9/2018
+                                     */
+                                    journal?: string;
+                                    /**
+                                     * @description Digital Object Identifier, where it has one.
+                                     * @example null
+                                     */
+                                    doi?: string | null;
+                                    /**
+                                     * @description A page it can be read at, where it has no DOI.
+                                     * @example https://saami.org/wp-content/uploads/2025/03/Gun-Recoil-Formulae-2018-07-9.pdf
+                                     */
+                                    url?: string | null;
+                                }[];
+                                /** @description SAAMI's gas velocity factor for each class, as a multiple of the muzzle velocity. */
+                                gasFactors?: {
+                                    /**
+                                     * @description Gas velocity factor for high powered rifles.
+                                     * @example 1.75
+                                     */
+                                    rifle?: number;
+                                    /**
+                                     * @description Gas velocity factor for shotguns (average length).
+                                     * @example 1.5
+                                     */
+                                    shotgun?: number;
+                                    /**
+                                     * @description Gas velocity factor for shotguns (long barrel).
+                                     * @example 1.25
+                                     */
+                                    shotgun_long_barrel?: number;
+                                    /**
+                                     * @description Gas velocity factor for pistol & revolvers.
+                                     * @example 1.5
+                                     */
+                                    handgun?: number;
+                                };
+                            };
+                            /** @description The shot every firearm was answered for. */
+                            shot?: {
+                                /**
+                                 * @description Which recorded weight was asked for.
+                                 * @example loaded
+                                 * @enum {string}
+                                 */
+                                mass?: "loaded" | "empty";
+                                /**
+                                 * @description The powder charge given, in grams. Null when none was.
+                                 * @example null
+                                 */
+                                powderChargeG?: number | null;
+                                /**
+                                 * @description The class given in the query. Null when each firearm's class came from its category.
+                                 * @example null
+                                 * @enum {string|null}
+                                 */
+                                gasClass?: "rifle" | "shotgun" | "shotgun_long_barrel" | "handgun" | null;
+                                /**
+                                 * @description True when no powder charge was given, so every figure is a lower bound.
+                                 * @example true
+                                 */
+                                lowerBound?: boolean;
+                                /** @description The query parameters not sent, answered from their defaults. */
+                                defaulted?: string[];
+                            };
+                            /** @description One result per firearm, in the order their ids were given. */
+                            results?: {
+                                /** @description The firearm this result is for. */
+                                firearm?: {
+                                    /**
+                                     * @description Firearm slug.
+                                     * @example hk416
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Firearm name.
+                                     * @example HK416
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description Category slug.
+                                     * @example assault-rifle
+                                     */
+                                    categoryId?: string;
+                                    /**
+                                     * @description Barrel length in mm, from the record.
+                                     * @example 264
+                                     */
+                                    barrelLengthMm?: number | null;
+                                };
+                                /** @description The load fired: the one named by `ammo_id`, or the one `/v1/firearms/{id}/load` fires this firearm with. Null when there is none. */
+                                ammunition?: {
+                                    /**
+                                     * @description Ammunition slug.
+                                     * @example m855
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Load name.
+                                     * @example M855 Ball (SS109)
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description Cartridge slug.
+                                     * @example 5-56x45mm-nato
+                                     */
+                                    caliberId?: string;
+                                    /**
+                                     * @description Bullet mass in grams, from the load record.
+                                     * @example 4.02
+                                     */
+                                    bulletWeightG?: number;
+                                } | null;
+                                /** @description The mass that recoils. */
+                                mass?: {
+                                    /**
+                                     * @description The firearm's mass in grams.
+                                     * @example 3420
+                                     */
+                                    firearmG?: number | null;
+                                    /**
+                                     * @description Which recorded weight it is.
+                                     * @enum {string|null}
+                                     */
+                                    basis?: "loaded" | "empty" | null;
+                                    /**
+                                     * @description `catalogue` when the record states it.
+                                     * @enum {string|null}
+                                     */
+                                    source?: "catalogue" | null;
+                                };
+                                /**
+                                 * @description The load's muzzle velocity from this firearm's barrel, in m/s.
+                                 * @example 777
+                                 */
+                                muzzleVelocityMps?: number | null;
+                                /** @description The powder gas term. */
+                                gas?: {
+                                    /**
+                                     * @description The SAAMI class applied. Null when none applies.
+                                     * @example rifle
+                                     * @enum {string|null}
+                                     */
+                                    class?: "rifle" | "shotgun" | "shotgun_long_barrel" | "handgun" | null;
+                                    /**
+                                     * @description The class as SAAMI names it.
+                                     * @example High powered rifles
+                                     */
+                                    label?: string | null;
+                                    /**
+                                     * @description Its gas velocity factor.
+                                     * @example 1.75
+                                     */
+                                    factor?: number | null;
+                                    /**
+                                     * @description The powder gas velocity counted, in m/s. Null when the gas was not counted.
+                                     * @example null
+                                     */
+                                    velocityMps?: number | null;
+                                    /**
+                                     * @description The powder charge counted, in grams.
+                                     * @example null
+                                     */
+                                    chargeG?: number | null;
+                                    /**
+                                     * @description Whether the class was named in the query or read from the category.
+                                     * @enum {string|null}
+                                     */
+                                    classSource?: "query" | "category" | null;
+                                };
+                                /** @description The free recoil. Null when a figure it needs is not recorded; `error` says which. */
+                                recoil?: {
+                                    /**
+                                     * @description Momentum the firearm takes, in N·s.
+                                     * @example 3.125
+                                     */
+                                    impulseNs?: number;
+                                    /**
+                                     * @description The bullet's share of it.
+                                     * @example 3.125
+                                     */
+                                    bulletImpulseNs?: number;
+                                    /**
+                                     * @description The powder gas's share. Null when it was not counted.
+                                     * @example null
+                                     */
+                                    gasImpulseNs?: number | null;
+                                    /**
+                                     * @description Free recoil velocity in m/s.
+                                     * @example 0.914
+                                     */
+                                    velocityMps?: number;
+                                    /**
+                                     * @description Free recoil energy in joules.
+                                     * @example 1.43
+                                     */
+                                    energyJ?: number;
+                                    /**
+                                     * @description True when the gas was not counted, so the real recoil is larger.
+                                     * @example true
+                                     */
+                                    lowerBound?: boolean;
+                                } | null;
+                                /** @description Against the option with the least recoil energy. Null on that option, on a lone firearm, and where no recoil was computed. */
+                                delta?: {
+                                    /**
+                                     * @description Joules more than the softest-recoiling option.
+                                     * @example 0.36
+                                     */
+                                    energyJ?: number;
+                                    /**
+                                     * @description Metres per second more.
+                                     * @example 0.123
+                                     */
+                                    velocityMps?: number;
+                                    /**
+                                     * @description N·s more.
+                                     * @example 0.316
+                                     */
+                                    impulseNs?: number;
+                                } | null;
+                                /** @description What an answer assumed in place of a missing figure, or why the gas was not counted. */
+                                warnings?: string[];
+                                /**
+                                 * @description Why this firearm could not be answered. Null when it was.
+                                 * @example null
+                                 */
+                                error?: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Your copy is current. No body is sent, and this response does not count toward the daily request allowance. */
+            304: {
+                headers: {
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description The lifetime that applied to the response you already hold. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    comparePointBlank: {
+        parameters: {
+            query: {
+                /**
+                 * @description Comma-separated firearm slugs, maximum 5.
+                 * @example hk416,fn-scar-h
+                 */
+                ids: string;
+                /**
+                 * @description The load every firearm fires. Without it, each fires the load its ballistic profile uses.
+                 * @example m855
+                 */
+                ammo_id?: string;
+                /**
+                 * @description The target's diameter in mm: the bullet must stay within half of it above and below the line of sight.
+                 * @example 200
+                 */
+                target_mm?: number;
+                /** @description Height of the sights above the bore in mm. Default: the height the ballistic profile assumes for the firearm's category. */
+                sight_height_mm?: number;
+            };
+            header?: {
+                /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compare the point-blank and supersonic range of each firearm */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description The method behind every figure in the answer. */
+                            method?: {
+                                /**
+                                 * @description The method the figures were computed with.
+                                 * @example maximum-point-blank-range
+                                 */
+                                id?: string;
+                                /**
+                                 * @description The method by name.
+                                 * @example Maximum point-blank range on the API trajectory
+                                 */
+                                name?: string;
+                                /** @description The geometry as written, with its units, so the figures can be reproduced. */
+                                equation?: string;
+                                /** @description Where the atmosphere the trajectory is flown through is defined. */
+                                citations?: {
+                                    /**
+                                     * @description Authors or the issuing body.
+                                     * @example Sporting Arms and Ammunition Manufacturers' Institute (SAAMI)
+                                     */
+                                    authors?: string;
+                                    /**
+                                     * @description Year of publication or revision.
+                                     * @example 2018
+                                     */
+                                    year?: number;
+                                    /**
+                                     * @description Title.
+                                     * @example Gun Recoil, Technical: Free Recoil Energy
+                                     */
+                                    title?: string;
+                                    /**
+                                     * @description Where it is published: journal, publisher or document number.
+                                     * @example SAAMI technical sheet, Rev. 7/9/2018
+                                     */
+                                    journal?: string;
+                                    /**
+                                     * @description Digital Object Identifier, where it has one.
+                                     * @example null
+                                     */
+                                    doi?: string | null;
+                                    /**
+                                     * @description A page it can be read at, where it has no DOI.
+                                     * @example https://saami.org/wp-content/uploads/2025/03/Gun-Recoil-Formulae-2018-07-9.pdf
+                                     */
+                                    url?: string | null;
+                                }[];
+                                /**
+                                 * @description The step, in metres, every distance is found to.
+                                 * @example 1
+                                 */
+                                resolutionM?: number;
+                                /**
+                                 * @description How far each trajectory is flown, in metres.
+                                 * @example 2500
+                                 */
+                                maxRangeM?: number;
+                            };
+                            /** @description The atmosphere, as the trajectory solver uses it. */
+                            atmosphere?: {
+                                /**
+                                 * @description The air every trajectory is flown through.
+                                 * @example ICAO standard atmosphere at sea level
+                                 */
+                                name?: string;
+                                /**
+                                 * @description Air temperature in °C.
+                                 * @example 15
+                                 */
+                                temperatureC?: number;
+                                /**
+                                 * @description Air pressure in kPa.
+                                 * @example 101.325
+                                 */
+                                pressureKpa?: number;
+                                /**
+                                 * @description Air density in kg/m³.
+                                 * @example 1.225
+                                 */
+                                airDensityKgM3?: number;
+                                /**
+                                 * @description Speed of sound in m/s: the line the supersonic range is drawn at.
+                                 * @example 340.294
+                                 */
+                                speedOfSoundMps?: number;
+                            };
+                            /** @description The target every firearm was answered for. */
+                            target?: {
+                                /**
+                                 * @description Target diameter in mm.
+                                 * @example 200
+                                 */
+                                diameterMm?: number;
+                                /**
+                                 * @description Half of it: how far above or below the line of sight the bullet may be.
+                                 * @example 100
+                                 */
+                                radiusMm?: number;
+                                /** @description The query parameters not sent, answered from their defaults. */
+                                defaulted?: string[];
+                            };
+                            /** @description One result per firearm, in the order their ids were given. */
+                            results?: {
+                                /** @description The firearm this result is for. */
+                                firearm?: {
+                                    /**
+                                     * @description Firearm slug.
+                                     * @example hk416
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Firearm name.
+                                     * @example HK416
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description Category slug.
+                                     * @example assault-rifle
+                                     */
+                                    categoryId?: string;
+                                    /**
+                                     * @description Barrel length in mm, from the record.
+                                     * @example 264
+                                     */
+                                    barrelLengthMm?: number | null;
+                                };
+                                /** @description The load fired: the one named by `ammo_id`, or the one `/v1/firearms/{id}/load` fires this firearm with. Null when there is none. */
+                                ammunition?: {
+                                    /**
+                                     * @description Ammunition slug.
+                                     * @example m855
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Load name.
+                                     * @example M855 Ball (SS109)
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description Cartridge slug.
+                                     * @example 5-56x45mm-nato
+                                     */
+                                    caliberId?: string;
+                                    /**
+                                     * @description Bullet mass in grams, from the load record.
+                                     * @example 4.02
+                                     */
+                                    bulletWeightG?: number;
+                                } | null;
+                                /**
+                                 * @description The load's muzzle velocity from this firearm's barrel, in m/s.
+                                 * @example 825
+                                 */
+                                muzzleVelocityMps?: number | null;
+                                /** @description The sights the path is measured from. */
+                                sight?: {
+                                    /**
+                                     * @description Sight height above the bore in mm.
+                                     * @example 38
+                                     */
+                                    heightMm?: number;
+                                    /**
+                                     * @description Whether it was given in the query or assumed for the category.
+                                     * @enum {string}
+                                     */
+                                    source?: "query" | "category";
+                                };
+                                /** @description The maximum point-blank range. Null when it could not be computed; `error` says why. */
+                                pointBlank?: {
+                                    /**
+                                     * @description Maximum point-blank range in metres.
+                                     * @example 281
+                                     */
+                                    rangeM?: number;
+                                    /**
+                                     * @description Where the bullet first rises through the line of sight, in metres.
+                                     * @example 21
+                                     */
+                                    nearZeroM?: number;
+                                    /**
+                                     * @description Where it falls back through it: the zero that gives this range, in metres.
+                                     * @example 238
+                                     */
+                                    farZeroM?: number;
+                                    /**
+                                     * @description Where it is highest above the line of sight, in metres.
+                                     * @example 138
+                                     */
+                                    peakM?: number;
+                                    /**
+                                     * @description How high it is there, in mm.
+                                     * @example 100
+                                     */
+                                    peakHeightMm?: number;
+                                    /**
+                                     * @description The bore's angle above the line of sight, in milliradians.
+                                     * @example 2.043
+                                     */
+                                    boreAngleMrad?: number;
+                                    /**
+                                     * @description Time of flight to the range, in seconds.
+                                     * @example 0.36
+                                     */
+                                    timeOfFlightS?: number;
+                                    /**
+                                     * @description Velocity at the range, in m/s.
+                                     * @example 738
+                                     */
+                                    velocityMps?: number;
+                                } | null;
+                                /** @description How far the bullet stays supersonic. Null when no trajectory was flown. */
+                                supersonic?: {
+                                    /**
+                                     * @description The furthest distance flown faster than sound, in metres. 0 for a load subsonic at the muzzle.
+                                     * @example 1105
+                                     */
+                                    rangeM?: number;
+                                    /**
+                                     * @description Time of flight to it, in seconds.
+                                     * @example 1.856
+                                     */
+                                    timeOfFlightS?: number;
+                                    /**
+                                     * @description True when the bullet is still supersonic where the trajectory ends, so the range is at least `rangeM`.
+                                     * @example false
+                                     */
+                                    beyondProfile?: boolean;
+                                } | null;
+                                /** @description Against the option with the longest point-blank range. Null on that option, on a lone firearm, and where no range was computed. */
+                                delta?: {
+                                    /**
+                                     * @description Metres of point-blank range against the longest (negative: shorter).
+                                     * @example -7
+                                     */
+                                    rangeM?: number;
+                                    /**
+                                     * @description Metres of far zero against it.
+                                     * @example -6
+                                     */
+                                    farZeroM?: number;
+                                } | null;
+                                /** @description What an answer needs qualifying with. */
+                                warnings?: string[];
+                                /**
+                                 * @description Why this firearm could not be answered. Null when it was.
+                                 * @example null
+                                 */
+                                error?: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Your copy is current. No body is sent, and this response does not count toward the daily request allowance. */
+            304: {
+                headers: {
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description The lifetime that applied to the response you already hold. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    compareAmmoLoad: {
+        parameters: {
+            query: {
+                /**
+                 * @description Comma-separated firearm slugs, maximum 5.
+                 * @example hk416,ak-74
+                 */
+                ids: string;
+                /**
+                 * @description A load whose bullet the estimate uses, for the firearms that fire its cartridge. Without it, each cartridge's typical bullet.
+                 * @example m855
+                 */
+                ammo_id?: string;
+                /**
+                 * @description A weight of full magazines to fill, in kg.
+                 * @example 5
+                 */
+                budget_kg?: number;
+                /** @description Full magazines in the estimated basic load. */
+                magazines?: number;
+                /** @description Rounds in the estimated basic load. Default: `magazines` times the capacity. */
+                rounds?: number;
+            };
+            header?: {
+                /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compare how much ammunition each firearm carries per kilogram */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description How long this response may be kept. This endpoint sends `public, max-age=300, s-maxage=3600, stale-while-revalidate=300`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The response payload. */
+                        data: {
+                            /** @description The method behind every figure in the answer. */
+                            method?: {
+                                /**
+                                 * @description The method the figures were computed with.
+                                 * @example ammo-load
+                                 */
+                                id?: string;
+                                /**
+                                 * @description The method by name.
+                                 * @example Magazine arithmetic and the fitted cartridge-mass model
+                                 */
+                                name?: string;
+                                /** @description The arithmetic and the model as written, with units, so the figures can be reproduced. */
+                                equation?: string;
+                                /**
+                                 * @description The model's largest error on its reference cartridges, in percent: the range every estimate carries.
+                                 * @example 8.5
+                                 */
+                                maxErrorPct?: number;
+                                /** @description The smallest and largest case envelope the model was fitted on, in cm³. */
+                                fittedEnvelopeCm3?: number[];
+                                /** @description The cartridges the model was fitted to. */
+                                references?: {
+                                    /**
+                                     * @description The cartridge.
+                                     * @example 7.62×39mm
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description The load whose mass is stated.
+                                     * @example 57-N-231
+                                     */
+                                    load?: string;
+                                    /**
+                                     * @description The loaded round's mass as its source states it, in grams.
+                                     * @example 16.3
+                                     */
+                                    roundG?: number;
+                                    /**
+                                     * @description Where the mass is stated.
+                                     * @example https://en.wikipedia.org/wiki/7.62%C3%9739mm
+                                     */
+                                    source?: string;
+                                }[];
+                            };
+                            /** @description The load every firearm was answered for. */
+                            load?: {
+                                /**
+                                 * @description The weight budget in kg.
+                                 * @example 5
+                                 */
+                                budgetKg?: number;
+                                /**
+                                 * @description Full magazines in the estimated basic load.
+                                 * @example 7
+                                 */
+                                magazines?: number;
+                                /**
+                                 * @description Rounds in the estimated basic load, as given. Null when each firearm's came from its capacity.
+                                 * @example null
+                                 */
+                                rounds?: number | null;
+                                /**
+                                 * @description The load named, if any.
+                                 * @example null
+                                 */
+                                ammoId?: string | null;
+                                /** @description The query parameters not sent, answered from their defaults. */
+                                defaulted?: string[];
+                            };
+                            /** @description One result per firearm, in the order their ids were given. */
+                            results?: {
+                                /** @description The firearm this result is for. */
+                                firearm?: {
+                                    /**
+                                     * @description Firearm slug.
+                                     * @example hk416
+                                     */
+                                    id?: string;
+                                    /**
+                                     * @description Firearm name.
+                                     * @example HK416
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description How the firearm feeds, as the catalogue records it.
+                                     * @example detachable_box
+                                     */
+                                    magazineType?: string | null;
+                                    /**
+                                     * @description Rounds in a standard magazine.
+                                     * @example 30
+                                     */
+                                    magazineCapacity?: number | null;
+                                };
+                                /** @description The cartridge the estimate is for. Null when the firearm records none. */
+                                cartridge?: {
+                                    /**
+                                     * @description The cartridge estimated.
+                                     * @example 5-56x45mm-nato
+                                     */
+                                    caliberId?: string;
+                                    /**
+                                     * @description The bullet mass the estimate uses, in grams.
+                                     * @example 4
+                                     */
+                                    bulletG?: number | null;
+                                    /**
+                                     * @description `ammunition` for the named load's bullet, `caliber` for the cartridge's typical bullet.
+                                     * @example caliber
+                                     * @enum {string|null}
+                                     */
+                                    bulletSource?: "ammunition" | "caliber" | null;
+                                    /**
+                                     * @description The load whose bullet is used, if one.
+                                     * @example null
+                                     */
+                                    ammunitionId?: string | null;
+                                    /**
+                                     * @description The case envelope in cm³: π/4 × base diameter² × case length.
+                                     * @example 3.222
+                                     */
+                                    envelopeCm3?: number | null;
+                                } | null;
+                                /** @description A full magazine, derived. Null when the feed is not detachable or a weight or the capacity is not recorded. */
+                                magazine?: {
+                                    /**
+                                     * @description One full magazine in grams: loaded weight less empty weight.
+                                     * @example 400
+                                     */
+                                    loadedMagazineG?: number;
+                                    /**
+                                     * @description Rounds in it.
+                                     * @example 30
+                                     */
+                                    capacity?: number;
+                                    /**
+                                     * @description Rounds carried per kilogram of full magazines.
+                                     * @example 75
+                                     */
+                                    roundsPerKg?: number;
+                                    /**
+                                     * @description Always `derived`: arithmetic on two figures the record states.
+                                     * @enum {string}
+                                     */
+                                    source?: "derived";
+                                    /** @description The derived magazine held against the cartridge-mass model. Null when no round mass could be estimated. */
+                                    check?: {
+                                        /**
+                                         * @description How the derived magazine sits against the model: `lighter-than-rounds` means one of the two weights is wrong.
+                                         * @enum {string}
+                                         */
+                                        verdict?: "plausible" | "lighter-than-rounds" | "below-band" | "above-band";
+                                        /** @description What the rounds alone weigh, estimated. */
+                                        roundsG?: {
+                                            /**
+                                             * @description What the rounds alone weigh: the model's expected value.
+                                             * @example 361.7
+                                             */
+                                            expected?: number;
+                                            /** @description The expected value less the model's largest reference error. */
+                                            low?: number;
+                                            /** @description The expected value plus it. */
+                                            high?: number;
+                                        };
+                                        /** @description The model's band for a full magazine: the rounds and an empty magazine. */
+                                        bandG?: {
+                                            /**
+                                             * @description Lightest full magazine the model allows, in grams.
+                                             * @example 309
+                                             */
+                                            low?: number;
+                                            /**
+                                             * @description Heaviest.
+                                             * @example 879.3
+                                             */
+                                            high?: number;
+                                        };
+                                        /**
+                                         * @description Always `estimated`.
+                                         * @enum {string}
+                                         */
+                                        source?: "estimated";
+                                    } | null;
+                                } | null;
+                                /** @description What `budget_kg` of full magazines holds. Null when no full magazine was derived. */
+                                budget?: {
+                                    /**
+                                     * @description Full magazines the budget holds.
+                                     * @example 12
+                                     */
+                                    magazines?: number;
+                                    /**
+                                     * @description Rounds in them.
+                                     * @example 360
+                                     */
+                                    rounds?: number;
+                                    /**
+                                     * @description What they weigh, in grams.
+                                     * @example 4800
+                                     */
+                                    massG?: number;
+                                    /**
+                                     * @description What is left of the budget, in grams.
+                                     * @example 200
+                                     */
+                                    leftoverG?: number;
+                                    /**
+                                     * @description Always `derived`.
+                                     * @enum {string}
+                                     */
+                                    source?: "derived";
+                                } | null;
+                                /** @description A basic load's mass by the cartridge-mass model. Null when the cartridge lacks the figures the model needs. */
+                                basicLoad?: {
+                                    /**
+                                     * @description Rounds estimated.
+                                     * @example 210
+                                     */
+                                    rounds?: number;
+                                    /** @description One round, estimated. */
+                                    roundG?: {
+                                        /**
+                                         * @description One round: the model's expected value.
+                                         * @example 12.06
+                                         */
+                                        expected?: number;
+                                        /** @description The expected value less the model's largest reference error. */
+                                        low?: number;
+                                        /** @description The expected value plus it. */
+                                        high?: number;
+                                    };
+                                    /** @description The rounds together, estimated. */
+                                    roundsG?: {
+                                        /**
+                                         * @description The rounds together: the model's expected value.
+                                         * @example 2531.6
+                                         */
+                                        expected?: number;
+                                        /** @description The expected value less the model's largest reference error. */
+                                        low?: number;
+                                        /** @description The expected value plus it. */
+                                        high?: number;
+                                    };
+                                    /**
+                                     * @description Full magazines estimated.
+                                     * @example 7
+                                     */
+                                    magazines?: number;
+                                    /** @description The full magazines, estimated: the rounds and the model's band for an empty magazine, so wider than the rounds alone. Null without a detachable magazine and a capacity. */
+                                    magazinesG?: {
+                                        /**
+                                         * @description The full magazines, rounds and magazine bodies: the model's expected value.
+                                         * @example 3345.3
+                                         */
+                                        expected?: number;
+                                        /** @description The expected value less the model's largest reference error. */
+                                        low?: number;
+                                        /** @description The expected value plus it. */
+                                        high?: number;
+                                    } | null;
+                                    /**
+                                     * @description Always `estimated`: the fitted model, never catalogue data.
+                                     * @enum {string}
+                                     */
+                                    source?: "estimated";
+                                } | null;
+                                /** @description Against the option that carries the most rounds per kilogram, leaving out any magazine the model finds lighter than its rounds. Null on that option, on a lone firearm, and where no magazine was derived. */
+                                delta?: {
+                                    /**
+                                     * @description Rounds per kilogram against the densest option (negative: fewer).
+                                     * @example 25
+                                     */
+                                    roundsPerKg?: number;
+                                    /**
+                                     * @description Rounds in the budget against it.
+                                     * @example 120
+                                     */
+                                    budgetRounds?: number;
+                                } | null;
+                                /** @description Why a figure is missing, or why a derived one is doubtful. */
+                                warnings?: string[];
+                                /**
+                                 * @description Why nothing could be computed for this firearm. Null when anything was.
+                                 * @example null
+                                 */
+                                error?: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Your copy is current. No body is sent, and this response does not count toward the daily request allowance. */
+            304: {
+                headers: {
+                    /** @description A hash of this exact response body, for this plan. Send it back as `If-None-Match` to revalidate cheaply. It is per-response rather than per-record: two plans receive different fields for the same record and therefore different tags. To compare a record across plans, use the `version` field on the record itself. */
+                    ETag?: string;
+                    /** @description The lifetime that applied to the response you already hold. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listResearchPapers: {
+        parameters: {
+            query?: {
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+                /**
+                 * @description Filter by topic
+                 * @example load-carriage
+                 */
+                topic?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List research papers */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: {
+                            /**
+                             * @description Paper id.
+                             * @example 5f0c1e8a-2d3b-4c6e-9a1f-7b8c9d0e1f2a
+                             */
+                            id?: string;
+                            /**
+                             * @description URL segment of the paper on the research site.
+                             * @example rifle-mass-and-the-energy-cost-of-a-foot-march
+                             */
+                            slug?: string;
+                            /**
+                             * @description Paper title.
+                             * @example Rifle mass and the energy cost of a foot march
+                             */
+                            title?: string;
+                            /** @description The abstract, as plain text. */
+                            abstract?: string | null;
+                            /** @description The paper in markdown. A `gunspec-chart` fence names a chart by the catalogue data it draws. */
+                            body?: string | null;
+                            /** @description The findings, one sentence each, for a reader with a minute. */
+                            keyFindings?: string[];
+                            /**
+                             * @description What kind of document it is.
+                             * @example technical_report
+                             * @enum {string}
+                             */
+                            reportType?: "technical_report" | "technical_note" | "preprint" | "white_paper";
+                            /**
+                             * @description What the research has been through. Publication on the research site is not a review; `peer_reviewed` means a venue accepted it.
+                             * @example not_reviewed
+                             * @enum {string}
+                             */
+                            reviewStatus?: "not_reviewed" | "submitted" | "under_review" | "peer_reviewed";
+                            /**
+                             * @description Where it was submitted or published, when it was.
+                             * @example null
+                             */
+                            venue?: string | null;
+                            /**
+                             * @description Its DOI as registered, never a URL.
+                             * @example null
+                             */
+                            doi?: string | null;
+                            /** @description Named authors, in order. */
+                            authors?: {
+                                /**
+                                 * @description Author name.
+                                 * @example GunSpec Research
+                                 */
+                                name?: string;
+                                /**
+                                 * @description Author affiliation.
+                                 * @example GunSpec.io
+                                 */
+                                affiliation?: string | null;
+                            }[];
+                            /**
+                             * @description What the paper is about, as a slug.
+                             * @example load-carriage
+                             */
+                            topic?: string | null;
+                            /** @description The catalogue data the figures were computed on. */
+                            dataVersion?: string | null;
+                            /** @description The documentation Methods pages its figures are computed by, by slug. */
+                            methods?: string[];
+                            /** @description API calls that reproduce its figures. */
+                            apiCalls?: string[];
+                            /**
+                             * @description The hero picture, as a path on the research site.
+                             * @example null
+                             */
+                            heroImage?: string | null;
+                            /**
+                             * @description What the hero shows, as alt text.
+                             * @example null
+                             */
+                            heroAlt?: string | null;
+                            /**
+                             * @description Always `published` on a public read.
+                             * @example published
+                             */
+                            status?: string;
+                            /**
+                             * @description When it went public.
+                             * @example 2026-09-30T00:00:00.000Z
+                             */
+                            publishedAt?: string | null;
+                            /**
+                             * @description When the record was first added, `YYYY-MM-DD HH:MM:SS` in UTC.
+                             * @example 2026-09-29T00:00:00.000Z
+                             */
+                            createdAt?: string;
+                            /**
+                             * @description When a field we serve last changed.
+                             * @example 2026-09-30T00:00:00.000Z
+                             */
+                            updatedAt?: string;
+                        }[];
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getResearchPaper: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Paper slug
+                 * @example rifle-mass-and-the-energy-cost-of-a-foot-march
+                 */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get a research paper */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description The paper, wrapped as the blog read wraps a post. */
+                        data: {
+                            /** @description A research paper as the public reads serve it. */
+                            paper?: {
+                                /**
+                                 * @description Paper id.
+                                 * @example 5f0c1e8a-2d3b-4c6e-9a1f-7b8c9d0e1f2a
+                                 */
+                                id?: string;
+                                /**
+                                 * @description URL segment of the paper on the research site.
+                                 * @example rifle-mass-and-the-energy-cost-of-a-foot-march
+                                 */
+                                slug?: string;
+                                /**
+                                 * @description Paper title.
+                                 * @example Rifle mass and the energy cost of a foot march
+                                 */
+                                title?: string;
+                                /** @description The abstract, as plain text. */
+                                abstract?: string | null;
+                                /** @description The paper in markdown. A `gunspec-chart` fence names a chart by the catalogue data it draws. */
+                                body?: string | null;
+                                /** @description The findings, one sentence each, for a reader with a minute. */
+                                keyFindings?: string[];
+                                /**
+                                 * @description What kind of document it is.
+                                 * @example technical_report
+                                 * @enum {string}
+                                 */
+                                reportType?: "technical_report" | "technical_note" | "preprint" | "white_paper";
+                                /**
+                                 * @description What the research has been through. Publication on the research site is not a review; `peer_reviewed` means a venue accepted it.
+                                 * @example not_reviewed
+                                 * @enum {string}
+                                 */
+                                reviewStatus?: "not_reviewed" | "submitted" | "under_review" | "peer_reviewed";
+                                /**
+                                 * @description Where it was submitted or published, when it was.
+                                 * @example null
+                                 */
+                                venue?: string | null;
+                                /**
+                                 * @description Its DOI as registered, never a URL.
+                                 * @example null
+                                 */
+                                doi?: string | null;
+                                /** @description Named authors, in order. */
+                                authors?: {
+                                    /**
+                                     * @description Author name.
+                                     * @example GunSpec Research
+                                     */
+                                    name?: string;
+                                    /**
+                                     * @description Author affiliation.
+                                     * @example GunSpec.io
+                                     */
+                                    affiliation?: string | null;
+                                }[];
+                                /**
+                                 * @description What the paper is about, as a slug.
+                                 * @example load-carriage
+                                 */
+                                topic?: string | null;
+                                /** @description The catalogue data the figures were computed on. */
+                                dataVersion?: string | null;
+                                /** @description The documentation Methods pages its figures are computed by, by slug. */
+                                methods?: string[];
+                                /** @description API calls that reproduce its figures. */
+                                apiCalls?: string[];
+                                /**
+                                 * @description The hero picture, as a path on the research site.
+                                 * @example null
+                                 */
+                                heroImage?: string | null;
+                                /**
+                                 * @description What the hero shows, as alt text.
+                                 * @example null
+                                 */
+                                heroAlt?: string | null;
+                                /**
+                                 * @description Always `published` on a public read.
+                                 * @example published
+                                 */
+                                status?: string;
+                                /**
+                                 * @description When it went public.
+                                 * @example 2026-09-30T00:00:00.000Z
+                                 */
+                                publishedAt?: string | null;
+                                /**
+                                 * @description When the record was first added, `YYYY-MM-DD HH:MM:SS` in UTC.
+                                 * @example 2026-09-29T00:00:00.000Z
+                                 */
+                                createdAt?: string;
+                                /**
+                                 * @description When a field we serve last changed.
+                                 * @example 2026-09-30T00:00:00.000Z
+                                 */
+                                updatedAt?: string;
+                            };
+                        };
+                    };
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];

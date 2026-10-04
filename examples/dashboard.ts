@@ -258,7 +258,7 @@ function renderDashboard(data: {
 
   let aWins = 0, bWins = 0
   for (const [field, verdict] of Object.entries(h2h.verdicts)) {
-    const arrow = verdict.winner === 'a' ? '>' : verdict.winner === 'b' ? '<' : '='
+    const arrow = verdict.winner === 'a' ? '>' : verdict.winner === 'b' ? '<' : verdict.winner === 'unknown' ? '?' : '='
     console.log(`    ${field.padEnd(20)} ${verdict.a ?? '-'} ${arrow} ${verdict.b ?? '-'} (${verdict.better})`)
     if (verdict.winner === 'a') aWins++
     else if (verdict.winner === 'b') bWins++

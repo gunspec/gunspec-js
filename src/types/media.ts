@@ -2,9 +2,9 @@
 // @buun_group/gunspec-sdk - Media, name resolution and notice types
 // ---------------------------------------------------------------------------
 
-import type { MediaKind, NoticeVariant } from './vocabulary';
+import type { MediaItemKind, MediaKind, NoticeVariant } from './vocabulary';
 
-export type { MediaKind };
+export type { MediaItemKind, MediaKind };
 
 /** An image as it rides inline on a list row: id, URL, kind and dimensions. */
 export interface InlineMediaItem {
@@ -21,7 +21,10 @@ export interface InlineMediaItem {
 export interface FirearmMedia {
   /** Row id, or null for an asset derived from the record itself. */
   id: number | null;
-  kind: MediaKind;
+  /** A stored kind, or `feature_icon`: the drawing of one of the firearm's features. */
+  kind: MediaItemKind;
+  /** On a `feature_icon` only: the tag in the record's `features` it illustrates. */
+  feature?: string;
   mimeType: string | null;
   width: number | null;
   height: number | null;
@@ -55,7 +58,7 @@ export interface MediaCatalogParams {
 
 /** Parameters for `GET /v1/firearms/{id}/media`. */
 export interface ListFirearmMediaParams {
-  kind?: MediaKind;
+  kind?: MediaItemKind;
 }
 
 /** Parameters for `GET /v1/firearms/{id}/media/{selector}` as metadata. */

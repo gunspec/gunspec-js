@@ -222,11 +222,11 @@ describe('transport security', () => {
 });
 
 describe('retry policy', () => {
-  it('does not retry a spent daily cap', async () => {
+  it('does not retry a spent daily cap whose reset is beyond maxRetryAfterMs', async () => {
     const client = make({ retry: { maxRetries: 3, initialDelayMs: 1 } });
     fetchMock.mockResolvedValue(json(
       { success: false, error: { code: 'DAILY_CAP_EXCEEDED', reason: 'DAILY_CAP_EXCEEDED', message: 'x' } },
-      { status: 429, headers: { 'Retry-After': '1' } },
+      { status: 429, headers: { 'Retry-After': '600' } },
     ));
     await expect(client.get('/v1/x')).rejects.toBeInstanceOf(RateLimitError);
     expect(fetchMock).toHaveBeenCalledTimes(1);

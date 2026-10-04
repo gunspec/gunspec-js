@@ -54,6 +54,14 @@ import type {
   InlineMediaItem,
   InterfaceFirearm,
   InterfaceStandard,
+  LoadCarriageComparison,
+  LoadCarriageResult,
+  RecoilComparison,
+  RecoilResult,
+  PointBlankComparison,
+  PointBlankResult,
+  AmmoLoadComparison,
+  AmmoLoadResult,
   Manufacturer,
   MediaCatalogItem,
   Platform,
@@ -124,6 +132,18 @@ describe('hand-written models mirror the OpenAPI schemas', () => {
     assertNever<Mirror<FirearmUser, S['FirearmUser']>>();
     assertNever<Mirror<FirearmSchematic, S['FirearmSchematic']>>();
     assertNever<Mirror<Provenance, S['Provenance']>>();
+  });
+
+  it('analysis', () => {
+    type Result = NonNullable<Data<'compareLoadCarriage'>['results']>[number];
+    assertNever<Mirror<LoadCarriageComparison, Data<'compareLoadCarriage'>>>();
+    assertNever<Mirror<LoadCarriageResult, Result>>();
+    assertNever<Mirror<RecoilComparison, Data<'compareRecoil'>>>();
+    assertNever<Mirror<RecoilResult, NonNullable<Data<'compareRecoil'>['results']>[number]>>();
+    assertNever<Mirror<PointBlankComparison, Data<'comparePointBlank'>>>();
+    assertNever<Mirror<PointBlankResult, NonNullable<Data<'comparePointBlank'>['results']>[number]>>();
+    assertNever<Mirror<AmmoLoadComparison, Data<'compareAmmoLoad'>>>();
+    assertNever<Mirror<AmmoLoadResult, NonNullable<Data<'compareAmmoLoad'>['results']>[number]>>();
   });
 
   it('catalog', () => {

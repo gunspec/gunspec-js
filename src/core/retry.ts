@@ -53,9 +53,10 @@ export interface RetryConfig {
 
   /**
    * Longest `Retry-After` the SDK will honour, in milliseconds. A server that
-   * asks for a longer wait (a daily cap resetting at midnight, a maintenance
-   * window) gets the error surfaced to the caller instead of a sleeping
-   * process.
+   * asks for a longer wait (a daily cap resetting at midnight, a monthly cap
+   * resetting on the 1st, a maintenance window) gets the error surfaced to the
+   * caller instead of a sleeping process. A reset inside this window is waited
+   * out, so a call refused a second before midnight succeeds after it.
    *
    * @defaultValue `30_000`
    */
@@ -135,10 +136,17 @@ export function isRetryable(error: unknown, method: string): boolean {
     return true;
   }
 
-  // API errors with specific transient status codes. A spent daily
-  // allowance is a 429 that no backoff inside one process will outlast.
+  // API errors with specific transient status codes.
   if (error instanceof APIError) {
-    if (error instanceof RateLimitError && error.isDailyCap) return false;
+    /* A spent daily or monthly allowance is a 429 that backoff will not outlast,
+       so it is retried only when the server says the reset is close: the loop
+       in `withRetry` surfaces any wait longer than `maxRetryAfterMs` instead of
+       sleeping through it, which leaves a call refused a second before midnight
+       to wait the second and succeed. Without a `Retry-After` there is nothing
+       to say the reset is near, and a refused call is still counted. */
+    if (error instanceof RateLimitError && (error.isDailyCap || error.isMonthlyCap)) {
+      return error.retryAfter !== null;
+    }
     return RETRYABLE_STATUS_CODES.has(error.status);
   }
 

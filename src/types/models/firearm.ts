@@ -221,6 +221,13 @@ export interface Firearm {
 
   /** Confidence score for the data (0.0 - 1.0). */
   dataConfidence?: number | null;
+  /** When a source was last read against the record's figures. Null until one has been. The same value is in `provenance.verifiedAt`. */
+  verifiedAt?: string | null;
+  /**
+   * The figures a source confirmed: read off the manufacturer's own page, within the published
+   * tolerance, and accepted by a person. The same list is in `provenance.verifiedFields`.
+   */
+  verifiedFields?: string[] | null;
 
   // ── Timestamps ─────────────────────────────────────────────────────────
 

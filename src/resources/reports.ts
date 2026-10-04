@@ -15,7 +15,7 @@ import type {
  * @example
  * ```typescript
  * await client.reports.create({
- *   firearm_id: 'glock-17-gen5',
+ *   firearm_id: 'glock-g17-gen5',
  *   field: 'weight_g',
  *   description: 'Maker lists 625 g unloaded, we have 710 g.',
  * });

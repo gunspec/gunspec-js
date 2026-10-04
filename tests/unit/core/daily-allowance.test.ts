@@ -43,4 +43,42 @@ describe('parseRateLimitHeaders', () => {
     const info = parseRateLimitHeaders(headers({ 'X-Daily-Reset': 'tomorrow' }));
     expect(info.dailyReset).toBeNull();
   });
+
+  it('reads the monthly allowance a keyed call carries', () => {
+    const info = parseRateLimitHeaders(
+      headers({
+        'X-Monthly-Limit': '25000',
+        'X-Monthly-Remaining': '22616',
+        'X-Monthly-Reset': '2026-11-01T00:00:00.000Z',
+      }),
+    );
+    expect(info.monthlyLimit).toBe(25000);
+    expect(info.monthlyRemaining).toBe(22616);
+    expect(info.monthlyReset?.toISOString()).toBe('2026-11-01T00:00:00.000Z');
+  });
+
+  it('keeps the two allowances apart when both are sent', () => {
+    const info = parseRateLimitHeaders(
+      headers({
+        'X-Daily-Limit': '50',
+        'X-Daily-Remaining': '0',
+        'X-Daily-Reset': '2026-10-03T00:00:00.000Z',
+        'X-Monthly-Limit': '200',
+        'X-Monthly-Remaining': '150',
+        'X-Monthly-Reset': '2026-11-01T00:00:00.000Z',
+      }),
+    );
+    expect(info.dailyRemaining).toBe(0);
+    expect(info.monthlyRemaining).toBe(150);
+    expect(info.dailyReset?.toISOString()).toBe('2026-10-03T00:00:00.000Z');
+    expect(info.monthlyReset?.toISOString()).toBe('2026-11-01T00:00:00.000Z');
+  });
+
+  it('nulls a monthly allowance a keyless call does not carry, and an unparseable reset', () => {
+    const none = parseRateLimitHeaders(headers({ 'X-Daily-Limit': '50', 'X-Daily-Remaining': '49' }));
+    expect(none.monthlyLimit).toBeNull();
+    expect(none.monthlyRemaining).toBeNull();
+    expect(none.monthlyReset).toBeNull();
+    expect(parseRateLimitHeaders(headers({ 'X-Monthly-Reset': 'next month' })).monthlyReset).toBeNull();
+  });
 });

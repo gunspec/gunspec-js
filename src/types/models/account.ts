@@ -194,15 +194,61 @@ export interface WebhookTestResult {
  * Returned by `GET /v1/me/usage`.
  */
 export interface UsageStats {
-  /** Current billing month usage. */
+  /**
+   * This UTC month's usage against the plan's allowance, which is enforced for
+   * the whole account: every key draws on one pool, and once `used` reaches
+   * `limit` every call is refused with `MONTHLY_CAP_EXCEEDED` until `resetsAt`.
+   * The same figures ride every keyed response as `X-Monthly-Limit`,
+   * `X-Monthly-Remaining` and `X-Monthly-Reset` (see `response.rateLimit`).
+   */
   currentMonth: {
-    /** Requests used this month. */
+    /**
+     * Requests served this month across every key. Calls a limit refused with
+     * a 429, and 304s, are not counted: they spent nothing, and this is the
+     * figure the allowance is enforced against.
+     */
     used: number;
-    /** Monthly request limit. */
+    /** Monthly request limit for the plan. */
     limit: number;
-    /** Usage as a percentage (0-100). */
+    /** Requests left this month, never below zero. */
+    remaining?: number;
+    /** Usage as a percentage of the allowance. */
     percentage: number;
-    /** ISO-8601 timestamp when usage resets. */
+    /** ISO-8601 timestamp when usage resets: midnight UTC on the 1st, for every plan. */
+    resetsAt: string;
+  };
+  /**
+   * What is left of today, against the limit that is enforced: the daily limit,
+   * counted per key. The same figures ride every `/v1` response as
+   * `X-Daily-Limit`, `X-Daily-Remaining` and `X-Daily-Reset` (see
+   * `response.rateLimit`), so pacing needs no call to this endpoint; this is the
+   * figure to reconcile against, and the one that shows every key at once.
+   * Absent from an API that predates it.
+   */
+  daily?: {
+    /**
+     * Requests one key may make per UTC day on this plan: the limit that is
+     * enforced, held against each key on its own. `null` on a plan with no
+     * daily ceiling.
+     */
+    limitPerKey: number | null;
+    /** Requests made today (UTC) across every key. Not comparable with `limitPerKey` unless the account has one key. */
+    usedToday: number;
+    /**
+     * The key nearest its daily limit, or null when no key has made a request
+     * today. `used` counts calls the limit refused too, so it can pass
+     * `limitPerKey`: far past it means that key kept calling after being told to stop.
+     */
+    busiestKeyToday: {
+      keyId: string;
+      keyName: string;
+      used: number;
+      /** Requests that key has left today, never below zero; `null` with no daily ceiling. */
+      remaining: number | null;
+      /** Share of `limitPerKey` used, rounded. Can exceed 100. */
+      percentage: number;
+    } | null;
+    /** ISO-8601 instant the daily counters return to zero: the next midnight UTC. Same as `X-Daily-Reset`. */
     resetsAt: string;
   };
   /**
@@ -250,10 +296,54 @@ export interface UsageStats {
     /** Documented operations there are to call, counted from the spec. */
     operationsAvailable: number;
   };
+  /**
+   * Calls to endpoints above your plan, attached to the account so every key
+   * draws on the same balance. Every new account starts with a one-time grant
+   * covering any endpoint up to Studio. A call spent this way is served as that
+   * plan is served, carries `X-Endpoint-Credit: spent`, and is given back if it
+   * fails. Absent from an API that predates it.
+   */
+  endpointCredits?: {
+    /** Calls left across every credit that can still be spent. */
+    remaining: number;
+    /** Every credit the account has had, newest first, spent ones included. */
+    credits: Array<{
+      /** Id of the credit. */
+      id: string;
+      /** `welcome` for the one-time grant every account receives, `staff` for a credit the team gave you. */
+      source: string;
+      /** The operations it covers, or null when it covers everything up to `maxTier`. */
+      operations: string[] | null;
+      /** The highest plan whose endpoints it covers, or null when it names operations. */
+      maxTier: string | null;
+      /** Calls the credit was given. */
+      callsGranted: number;
+      /** Calls spent so far. */
+      callsUsed: number;
+      /** Calls left on it; zero once spent, expired or withdrawn. */
+      callsRemaining: number;
+      /** When it lapses, ISO 8601 UTC, or null when it does not. */
+      expiresAt: string | null;
+      /** `active`, `spent`, `expired` or `revoked`. */
+      status: string;
+      /** When it was given. */
+      createdAt: string;
+    }>;
+  };
   /** Daily request counts for the requested period; `mcpCount` is the MCP share. */
   dailyBreakdown: Array<{ date: string; count: number; mcpCount?: number }>;
   /** Per-API-key usage breakdown; `mcpToday` is what the key's daily MCP limit is held against. */
-  perKey: Array<{ keyId: string; keyName: string; count: number; mcpCount?: number; mcpToday?: number }>;
+  perKey: Array<{
+    keyId: string;
+    keyName: string;
+    count: number;
+    mcpCount?: number;
+    mcpToday?: number;
+    /** Requests this key made today (UTC), the figure its daily limit is held against. Counts refused calls. */
+    today?: number;
+    /** Requests this key has left today, never below zero; `null` with no daily ceiling. */
+    remainingToday?: number | null;
+  }>;
   /** Total number of API keys. */
   keyCount: number;
   /** Current subscription tier details. */
@@ -264,6 +354,8 @@ export interface UsageStats {
     requestsPerMonth: number;
     /** Requests per minute limit. */
     rateLimit: number;
+    /** Requests each key may make per UTC day: the limit that is enforced. `null` with no daily ceiling. */
+    requestsPerDay?: number | null;
     /** MCP calls each key may make per UTC day. */
     mcpCallsPerDay?: number;
   };
@@ -310,6 +402,8 @@ export interface BlogPost {
   body?: string | null;
   /** Hero image URL. */
   heroImage: string | null;
+  /** Alt text for the hero image. */
+  heroAlt?: string | null;
   /** Category slug, or null when the post is uncategorised. */
   category: string | null;
   /** Publication state. A public read only ever returns published posts. */
@@ -320,6 +414,20 @@ export interface BlogPost {
   createdAt: string;
   /** ISO-8601 last-update timestamp. */
   updatedAt: string;
+  /** Who wrote it, or null for a post nobody is credited on. */
+  author?: BlogPostAuthor | null;
+}
+
+/** The author of a blog post, as the public blog shows them. */
+export interface BlogPostAuthor {
+  /** The author's display name, as set on their GunSpec account. */
+  name: string;
+  /** URL segment of the author's page on the blog, made from their display name. */
+  handle: string;
+  /** DiceBear style of the author's generated avatar. */
+  avatarStyle: string;
+  /** Seed of the author's generated avatar. */
+  avatarSeed: string;
 }
 
 /** A user collection that has been shared publicly. */

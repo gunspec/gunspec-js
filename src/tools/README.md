@@ -9,7 +9,7 @@ Governed by: [`../README.md`](../README.md), `apps/assets/public/ai/README.md` (
 | File | Tools |
 |---|---|
 | `types.ts` | `ToolDefinition`, the JSON Schema subset, `defineTool`, shared `PAGE` / `PER_PAGE` / `SLUG` fragments |
-| `catalog.ts` | Firearms: search, resolve, list, get, compare, similar, variants, media, top |
+| `catalog.ts` | Firearms: search, resolve, list, get, compare, load carriage, similar, variants, media, top |
 | `reference.ts` | Manufacturers, calibers, categories, ammunition, stats summary, changelog |
 | `compat.ts` | Attachments, what fits what, mount standards, platforms, where to buy |
 | `docs.ts` | How to call the API: an operation's parameters, plan and failures, the printed sample in a language, plan limits. Plus the guides themselves - search them, read one section - which is where the advice lives rather than the declarations. Explorer, answered from `/v1/docs` |

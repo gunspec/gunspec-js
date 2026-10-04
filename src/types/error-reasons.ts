@@ -22,8 +22,10 @@ export type ErrorReason =
   | 'ACCOUNT_NOT_FOUND'
   | 'LINK_EXPIRED'
   | 'PROXY_CREDENTIAL_INVALID'
+  | 'WEBHOOK_SIGNATURE_INVALID'
   | 'PLAN_REQUIRED'
   | 'ACCOUNT_SUSPENDED'
+  | 'KEY_ON_HOLD'
   | 'KEY_NOT_LINKED_TO_ACCOUNT'
   | 'KEY_NOT_LINKED_TO_SHOP'
   | 'SHOP_UNDER_REVIEW'
@@ -42,6 +44,7 @@ export type ErrorReason =
   | 'PAYLOAD_TOO_LARGE'
   | 'RATE_LIMITED'
   | 'DAILY_CAP_EXCEEDED'
+  | 'MONTHLY_CAP_EXCEEDED'
   | 'MCP_DAILY_CAP_EXCEEDED'
   | 'PAGINATION_BURST'
   | 'REPORT_RATE_LIMITED'
@@ -116,6 +119,11 @@ export const ERROR_REASONS: Readonly<Record<ErrorReason, { status: number; summa
     summary: "A proxy or marketplace credential was presented and does not verify.",
     action: "Through a marketplace such as RapidAPI, contact the API provider: the proxy is misconfigured.",
   },
+  WEBHOOK_SIGNATURE_INVALID: {
+    status: 401,
+    summary: "An inbound webhook delivery is unsigned, or its signature does not match the secret it was sent under.",
+    action: "Set the same webhook secret on the sender and in the console; a sender's test delivery signed with another secret fails here.",
+  },
   PLAN_REQUIRED: {
     status: 403,
     summary: "The credential is valid and its plan is below what this endpoint needs. `details.requiredTier` names the plan.",
@@ -125,6 +133,11 @@ export const ERROR_REASONS: Readonly<Record<ErrorReason, { status: number; summa
     status: 403,
     summary: "The account behind this credential has been suspended.",
     action: "Contact support. Rotating the key will not help.",
+  },
+  KEY_ON_HOLD: {
+    status: 403,
+    summary: "This key is paused: it kept making requests long after its daily or monthly limit refused them. Only this key is paused, never the account.",
+    action: "Stop sending requests and wait for the time in `Retry-After`, or upgrade your plan, which lifts the pause at once. Signing in and changing plan are unaffected. A new key does not help: the pause follows the key you were given, and creating more is limited by your plan.",
   },
   KEY_NOT_LINKED_TO_ACCOUNT: {
     status: 403,
@@ -215,6 +228,11 @@ export const ERROR_REASONS: Readonly<Record<ErrorReason, { status: number; summa
     status: 429,
     summary: "The plan's daily request allowance is used up. It resets at midnight UTC.",
     action: "Wait for the reset, or upgrade for a larger allowance.",
+  },
+  MONTHLY_CAP_EXCEEDED: {
+    status: 429,
+    summary: "The plan's monthly request allowance is used up. It resets at midnight UTC on the first of the month. Calls a limit refused do not count towards it.",
+    action: "Wait for the reset in `Retry-After`, `error.resetsAt` or `X-Monthly-Reset`, or choose a larger plan, which raises the allowance at once.",
   },
   MCP_DAILY_CAP_EXCEEDED: {
     status: 429,

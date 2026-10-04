@@ -7,15 +7,28 @@ import type {
 /**
  * What this key has spent against its plan.
  *
- * The same counters the rate limiter and the daily cap read, so a client can
- * slow itself down before a 429 rather than after one. A 304 costs a
- * rate-limit slot but no daily quota, which is why a caching client sees this
- * number rise more slowly than its request count.
+ * The same counters the rate limiter and the caps read. `daily` is the limit
+ * that is enforced per key, held against each key on its own: `limitPerKey`,
+ * what the busiest key has left, and `resetsAt`, the next midnight UTC.
+ * `currentMonth` is the plan's allowance, enforced for the whole account: calls
+ * served this month (`used`), `limit`, `remaining` and `resetsAt`, midnight UTC
+ * on the 1st.
+ *
+ * To slow down before a 429 you do not need to call this: every response
+ * already carries what is left of the day and the month as
+ * `response.rateLimit` (`dailyRemaining`, `dailyReset`, `monthlyRemaining`,
+ * `monthlyReset`). Use this to reconcile and to see every key at once, and
+ * remember it is itself a request. A 304 costs a rate-limit slot but spends
+ * neither the day nor the month, which is why a caching client sees these
+ * numbers rise more slowly than its request count.
  *
  * @example
  * ```typescript
  * const { data } = await client.usage.get();
- * console.log(`${data.requests_today} of ${data.daily_limit} today`);
+ * const busiest = data.daily?.busiestKeyToday;
+ * if (busiest) {
+ *   console.log(`${busiest.used} of ${data.daily?.limitPerKey} today, resets ${data.daily?.resetsAt}`);
+ * }
  * ```
  */
 export class UsageResource {

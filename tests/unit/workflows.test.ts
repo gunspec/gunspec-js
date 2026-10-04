@@ -159,4 +159,42 @@ describe('gunspec_compare_by_name', () => {
   it('is found by name', () => {
     expect(getTool('gunspec_compare_by_name')?.kind).toBe('workflow');
   });
+
+  /* An AK-47 and an M4A1 both hold 30 rounds; the leader used to be whichever
+     was named first. */
+  const comparing = (field: string, values: Array<number | null>) =>
+    recordingClient({
+      'firearms.resolve': (q) => resolved(String(q)),
+      'firearms.compare': (params) => {
+        const ids = String((params as { ids: string }).ids).split(',');
+        const known = values.filter((v): v is number => v != null);
+        return {
+          data: {
+            items: ids.map((id) => firearm(id).data),
+            deltas: [{ field, values, min: Math.min(...known), max: Math.max(...known), percentDiff: 0 }],
+          },
+        };
+      },
+    });
+  type Leaders = { leaders: Record<string, { id: string; tiedWith: Array<{ id: string }> } | null> };
+
+  it('names no leader when every firearm holds the same value', async () => {
+    const { client } = comparing('magazineCapacity', [30, 30]);
+    const result = (await executeTool(client, 'gunspec_compare_by_name', { names: ['ak-47', 'm4a1'] })) as Leaders;
+    expect(result.leaders.highestCapacity).toBeNull();
+  });
+
+  it('names every firearm tied for the lead', async () => {
+    const { client } = comparing('magazineCapacity', [30, 20, 30]);
+    const result = (await executeTool(client, 'gunspec_compare_by_name', { names: ['a', 'b', 'c'] })) as Leaders;
+    expect(result.leaders.highestCapacity?.id).toBe('a');
+    expect(result.leaders.highestCapacity?.tiedWith.map((t) => t.id)).toEqual(['c']);
+  });
+
+  it('names a single leader with nobody tied', async () => {
+    const { client } = comparing('weightEmptyG', [3470, 2886]);
+    const result = (await executeTool(client, 'gunspec_compare_by_name', { names: ['ak-47', 'm4a1'] })) as Leaders;
+    expect(result.leaders.lightest?.id).toBe('m4a1');
+    expect(result.leaders.lightest?.tiedWith).toEqual([]);
+  });
 });

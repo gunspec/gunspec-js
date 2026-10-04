@@ -6,6 +6,7 @@ import { FirearmsResource } from './resources/firearms'
 import { ManufacturersResource } from './resources/manufacturers'
 import { CalibersResource } from './resources/calibers'
 import { CategoriesResource } from './resources/categories'
+import { FeaturesResource } from './resources/features'
 import { StatsResource } from './resources/stats'
 import { GameResource } from './resources/game'
 import { GameStatsResource } from './resources/game-stats'
@@ -119,6 +120,8 @@ export class GunSpec {
 
   /** Firearm categories (pistol, rifle, shotgun, etc.) */
   readonly categories: CategoriesResource
+  /** The drawn icon for each firearm feature. */
+  readonly features: FeaturesResource
 
   /** Aggregate statistics across the database */
   readonly stats: StatsResource
@@ -218,6 +221,7 @@ export class GunSpec {
     this.manufacturers = new ManufacturersResource(this._client)
     this.calibers = new CalibersResource(this._client)
     this.categories = new CategoriesResource(this._client)
+    this.features = new FeaturesResource(this._client)
     this.stats = new StatsResource(this._client)
     this.game = new GameResource(this._client)
     this.gameStats = new GameStatsResource(this._client)

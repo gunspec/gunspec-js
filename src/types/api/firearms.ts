@@ -73,6 +73,115 @@ export interface CompareFirearmsParams {
   ids: string;
 }
 
+/** The surface a march crosses; each has a Soule and Goldman (1972) terrain factor. */
+export type LoadCarriageTerrain = 'paved' | 'dirt_road' | 'light_brush' | 'heavy_brush' | 'swampy_bog' | 'loose_sand';
+
+/** Load-carriage equations: `lcda` (Looney et al. 2022) or `pandolf` (1977). */
+export type LoadCarriageModel = 'lcda' | 'pandolf';
+
+/**
+ * Parameters for `GET /v1/firearms/load-carriage`.
+ *
+ * Every parameter but `ids` has a default; the answer's `march.defaulted`
+ * names the ones it assumed.
+ */
+export interface LoadCarriageParams {
+  /**
+   * Comma-separated firearm slugs (maximum 5).
+   *
+   * @example `"hk416,fn-scar-l"`
+   */
+  ids: string;
+  /** Soldier body mass in kg, 40 to 160. Default 80. */
+  body_mass_kg?: number;
+  /** Body fat as a percentage of body mass, 3 to 50. Default 15. */
+  body_fat_pct?: number;
+  /** Everything else carried, in kg: armour, pack, water. 0 to 120. Default 0. */
+  kit_kg?: number;
+  /** Full magazines carried in total, the one in the firearm included, 0 to 20. 0 carries it unloaded. Default 1. */
+  magazines?: number;
+  /**
+   * Comma-separated attachment slugs (maximum 10), added to every firearm by their recorded weight.
+   *
+   * @example `"aimpoint-compm5"`
+   */
+  attachments?: string;
+  /** Marching speed in km/h, 1 to 10. Default 4.8. */
+  speed_kmh?: number;
+  /** Slope as a percentage, rise over run, -30 to 30: negative is downhill. Default 0. */
+  grade_pct?: number;
+  /** Surface. Default `paved`. */
+  terrain?: LoadCarriageTerrain;
+  /** March distance in km, 0.1 to 200. Default 20. */
+  distance_km?: number;
+  /** Equation. Default `lcda`; `pandolf` refuses a downhill grade. */
+  model?: LoadCarriageModel;
+}
+
+/** SAAMI's classes of firearm, each with its own powder gas velocity factor. */
+export type RecoilGasClass = 'rifle' | 'shotgun' | 'shotgun_long_barrel' | 'handgun';
+
+/**
+ * Parameters for `GET /v1/firearms/recoil`.
+ *
+ * Without `powder_charge_g` the answer counts the bullet alone and every
+ * figure is a lower bound.
+ */
+export interface RecoilParams {
+  /**
+   * Comma-separated firearm slugs (maximum 5).
+   *
+   * @example `"hk416,m4-carbine"`
+   */
+  ids: string;
+  /**
+   * The load every firearm fires. Default: each fires the load its ballistic profile uses.
+   *
+   * @example `"m855"`
+   */
+  ammo_id?: string;
+  /** Which recorded weight recoils. Default `loaded`, falling back to the empty weight where none is recorded. */
+  mass?: 'loaded' | 'empty';
+  /** The load's powder charge in grams, up to 100. Needs `ammo_id`. */
+  powder_charge_g?: number;
+  /** The SAAMI class whose gas velocity factor applies. Default: read from each firearm's category. */
+  gas_class?: RecoilGasClass;
+}
+
+/** Parameters for `GET /v1/firearms/point-blank`. */
+export interface PointBlankParams {
+  /**
+   * Comma-separated firearm slugs (maximum 5).
+   *
+   * @example `"hk416,fn-scar-h"`
+   */
+  ids: string;
+  /** The load every firearm fires. Default: each fires the load its ballistic profile uses. */
+  ammo_id?: string;
+  /** Target diameter in mm, 20 to 2000. Default 200. */
+  target_mm?: number;
+  /** Sight height above the bore in mm, 0 to 150. Default: the height assumed for the firearm's category. */
+  sight_height_mm?: number;
+}
+
+/** Parameters for `GET /v1/firearms/ammo-load`. */
+export interface AmmoLoadParams {
+  /**
+   * Comma-separated firearm slugs (maximum 5).
+   *
+   * @example `"hk416,ak-74"`
+   */
+  ids: string;
+  /** A load whose bullet the estimate uses, for the firearms that fire its cartridge. */
+  ammo_id?: string;
+  /** A weight of full magazines to fill, in kg, 0.1 to 100. Default 5. */
+  budget_kg?: number;
+  /** Full magazines in the estimated basic load, 0 to 50. Default 7. */
+  magazines?: number;
+  /** Rounds in the estimated basic load, 1 to 10000. Default: `magazines` times the capacity. */
+  rounds?: number;
+}
+
 /**
  * Parameters for `GET /v1/firearms/:id/game/meta`.
  */

@@ -139,13 +139,35 @@ export interface RateLimitInfo {
   /** Requests your plan allows per day, or `null` on a plan with no daily ceiling. */
   readonly dailyLimit: number | null;
   /**
-   * Requests left today.
+   * Requests left today after this one, never below zero: the response to the
+   * last request that will be served reports `0`, and the next is refused.
    *
    * Pace against it rather than settle on it: the API serves it from a short
    * cache while you are well under the cap and reads it live once you are near
    * one. `GET /v1/me/usage` is the figure to reconcile against.
    */
   readonly dailyRemaining: number | null;
-  /** When the daily counter rolls over (UTC midnight), or `null` when none is sent. */
+  /**
+   * When the daily counters return to zero: the next midnight UTC, as a `Date`.
+   * `null` when none is sent. Sleep until it once `dailyRemaining` reaches zero.
+   */
   readonly dailyReset: Date | null;
+  /**
+   * Requests your plan allows per UTC month, for the whole account: every key
+   * draws on one pool. `null` on a call made without a key, which has the daily
+   * limit only.
+   */
+  readonly monthlyLimit: number | null;
+  /**
+   * Requests left this month after this one, never below zero. Only calls that
+   * were served spend it: a call a limit refused, and a `304`, do not. The last
+   * request that will be served reports `0`, and the next is refused with
+   * `MONTHLY_CAP_EXCEEDED` until {@link monthlyReset}.
+   */
+  readonly monthlyRemaining: number | null;
+  /**
+   * When the monthly allowance returns to zero: midnight UTC on the 1st, as a
+   * `Date`. `null` when none is sent.
+   */
+  readonly monthlyReset: Date | null;
 }

@@ -16,6 +16,10 @@ import type {
   PaginatedResponse,
   Firearm,
   FirearmComparison,
+  LoadCarriageComparison,
+  RecoilComparison,
+  PointBlankComparison,
+  AmmoLoadComparison,
   GameMetaItem,
   ActionTypeStats,
   PowerRating,
@@ -24,6 +28,10 @@ import type {
   ListFirearmsParams,
   SearchFirearmsParams,
   CompareFirearmsParams,
+  LoadCarriageParams,
+  RecoilParams,
+  PointBlankParams,
+  AmmoLoadParams,
   GameMetaParams,
   RandomFirearmParams,
   TopFirearmsParams,
@@ -56,6 +64,34 @@ export function compare(
   params: CompareFirearmsParams,
 ): Promise<APIResponse<FirearmComparison>> {
   return client.get<FirearmComparison>('/v1/firearms/compare', params);
+}
+
+export function loadCarriage(
+  client: HttpClient,
+  params: LoadCarriageParams,
+): Promise<APIResponse<LoadCarriageComparison>> {
+  return client.get<LoadCarriageComparison>('/v1/firearms/load-carriage', params);
+}
+
+export function recoil(
+  client: HttpClient,
+  params: RecoilParams,
+): Promise<APIResponse<RecoilComparison>> {
+  return client.get<RecoilComparison>('/v1/firearms/recoil', params);
+}
+
+export function pointBlank(
+  client: HttpClient,
+  params: PointBlankParams,
+): Promise<APIResponse<PointBlankComparison>> {
+  return client.get<PointBlankComparison>('/v1/firearms/point-blank', params);
+}
+
+export function ammoLoad(
+  client: HttpClient,
+  params: AmmoLoadParams,
+): Promise<APIResponse<AmmoLoadComparison>> {
+  return client.get<AmmoLoadComparison>('/v1/firearms/ammo-load', params);
 }
 
 export function gameMeta(

@@ -5,7 +5,7 @@ The error hierarchy, split by where an error comes from. Everything extends `Gun
 | File | Purpose |
 |---|---|
 | `base.ts` | `GunSpecError`, prototype-safe root |
-| `api.ts` | `APIError` and one subclass per documented status (400, 401, 403, 404, 409, 413, 429, 500, 503), each carrying `code`, `reason`, `details`, `retryAfter`, `requestId`, `action` |
+| `api.ts` | `APIError` and one subclass per documented status (400, 401, 403, 404, 409, 413, 429, 500, 503), each carrying `code`, `reason`, `details`, `retryAfter`, `requestId`, `action`; `RateLimitError` adds `isDailyCap` (the plan's day or the MCP share of it) and `isMonthlyCap` (the plan's month, for the whole account), and on one of those refusals `dailyLimit` and `dailyReset`, or `monthlyLimit` and `monthlyReset` (the body's `limit` and `resetsAt`, else the `X-Daily-*` or `X-Monthly-*` headers, null when neither is sent, and null on every other 429). The retry loop treats a daily or monthly refusal as retryable only when `Retry-After` is present and within `maxRetryAfterMs` |
 | `transport.ts` | `ConnectionError`, `TimeoutError`, `ConfigurationError`, `InvalidArgumentError`: no API answer was involved |
 | `reasons.ts` | `defaultReasonFor(status)`, the API's own fallback table |
 | `factory.ts` | `createAPIError` from a status, body and headers; `parseRetryAfter` |

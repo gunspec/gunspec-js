@@ -136,7 +136,9 @@ export class AuthenticationError extends APIError {
  * caller is not permitted. Reissuing a key changes nothing.
  *
  * `reason` says why: `PLAN_REQUIRED` (see {@link requiredTier}),
- * `ACCOUNT_SUSPENDED`, `KEY_NOT_LINKED_TO_ACCOUNT`, `KEY_NOT_LINKED_TO_SHOP`,
+ * `ACCOUNT_SUSPENDED`, `KEY_ON_HOLD` (this free key kept calling after its
+ * daily limit refused it and is paused until {@link retryAfter} seconds from
+ * now; a paid plan lifts it at once), `KEY_NOT_LINKED_TO_ACCOUNT`, `KEY_NOT_LINKED_TO_SHOP`,
  * `SHOP_UNDER_REVIEW`, `NOT_OWNER`, `PAGINATION_DEPTH_EXCEEDED` ...
  */
 export class PermissionError extends APIError {
@@ -197,13 +199,29 @@ export class PayloadTooLargeError extends APIError {
   }
 }
 
+/** The two reasons that mean a day's allowance is spent: the plan's, and the share of it for the hosted MCP server. */
+const DAILY_CAP_REASONS: ReadonlySet<string> = new Set(['DAILY_CAP_EXCEEDED', 'MCP_DAILY_CAP_EXCEEDED']);
+
+/** The reason that means the plan's month is spent. */
+const MONTHLY_CAP_REASON = 'MONTHLY_CAP_EXCEEDED';
+
 /**
  * Thrown when the API returns **429 Too Many Requests**.
  *
  * `reason` distinguishes a per-minute limit (`RATE_LIMITED`, wait
  * {@link retryAfter} seconds) from the plan's daily allowance
- * (`DAILY_CAP_EXCEEDED`, resets at midnight UTC), a pagination burst
- * (`PAGINATION_BURST`) and a repeated data report (`REPORT_RATE_LIMITED`).
+ * (`DAILY_CAP_EXCEEDED`, resets at midnight UTC), the plan's monthly allowance
+ * (`MONTHLY_CAP_EXCEEDED`, resets at midnight UTC on the 1st), a pagination
+ * burst (`PAGINATION_BURST`) and a repeated data report
+ * (`REPORT_RATE_LIMITED`).
+ *
+ * On a daily or monthly refusal {@link retryAfter} is the real time left until
+ * the reset, up to a whole day or a whole month, and {@link dailyReset} or
+ * {@link monthlyReset} says when as a `Date`. Nothing is served before then,
+ * and a free key that keeps calling after being refused is paused, so stop and
+ * resume at the reset. The SDK retries one of these only when the reset is
+ * within `maxRetryAfterMs` (a call refused a second before midnight waits the
+ * second and succeeds); a longer wait is surfaced at once, never slept through.
  */
 export class RateLimitError extends APIError {
   static override readonly brand: string = 'RateLimitError';
@@ -220,9 +238,85 @@ export class RateLimitError extends APIError {
     super(429, code, message, requestId, headers, { ...extra, retryAfter });
   }
 
-  /** `true` when the day's allowance is spent and no short wait will help. */
+  /**
+   * `true` when a day's allowance is spent and no short wait will help: the
+   * plan's (`DAILY_CAP_EXCEEDED`) or the hosted MCP server's share of it
+   * (`MCP_DAILY_CAP_EXCEEDED`). Only the daily refusals: the month is
+   * {@link isMonthlyCap}, and a caller that wants "any allowance that resets
+   * later" writes `isDailyCap || isMonthlyCap`.
+   */
   get isDailyCap(): boolean {
-    return this.reason === 'DAILY_CAP_EXCEEDED';
+    return DAILY_CAP_REASONS.has(this.reason);
+  }
+
+  /**
+   * `true` when the plan's month is spent (`MONTHLY_CAP_EXCEEDED`): the
+   * allowance belongs to the whole account, so every key is refused until the
+   * reset, or until the plan changes.
+   */
+  get isMonthlyCap(): boolean {
+    return this.reason === MONTHLY_CAP_REASON;
+  }
+
+  /**
+   * The daily limit that was reached, per key, or `null` when this is not a
+   * daily refusal or the API did not say. Read from the response body, then
+   * the `X-Daily-Limit` header (`X-Daily-MCP-Limit` for the MCP share).
+   */
+  get dailyLimit(): number | null {
+    if (!this.isDailyCap) return null;
+    return this.readLimit(this.reason === 'MCP_DAILY_CAP_EXCEEDED' ? 'X-Daily-MCP-Limit' : 'X-Daily-Limit');
+  }
+
+  /**
+   * When the daily counters return to zero (the next midnight UTC), or `null`
+   * when this is not a daily refusal or the API did not say. Read from the
+   * response body's `resetsAt`, then the `X-Daily-Reset` header
+   * (`X-Daily-MCP-Reset` for the MCP share). The same instant as
+   * `error.retryAfter` seconds from now, as a date a scheduler can sleep until.
+   */
+  get dailyReset(): Date | null {
+    if (!this.isDailyCap) return null;
+    return this.readReset(this.reason === 'MCP_DAILY_CAP_EXCEEDED' ? 'X-Daily-MCP-Reset' : 'X-Daily-Reset');
+  }
+
+  /**
+   * The monthly allowance that was reached, for the whole account, or `null`
+   * when this is not a monthly refusal or the API did not say. Read from the
+   * response body, then the `X-Monthly-Limit` header.
+   */
+  get monthlyLimit(): number | null {
+    if (!this.isMonthlyCap) return null;
+    return this.readLimit('X-Monthly-Limit');
+  }
+
+  /**
+   * When the monthly allowance returns to zero (midnight UTC on the 1st), or
+   * `null` when this is not a monthly refusal or the API did not say. Read
+   * from the response body's `resetsAt`, then the `X-Monthly-Reset` header.
+   */
+  get monthlyReset(): Date | null {
+    if (!this.isMonthlyCap) return null;
+    return this.readReset('X-Monthly-Reset');
+  }
+
+  /** The body's `limit` when it is a number, else the named header, else `null`. */
+  private readLimit(header: string): number | null {
+    const fromBody = this.details?.limit;
+    if (typeof fromBody === 'number' && Number.isFinite(fromBody)) return fromBody;
+    const raw = this.headers.get(header);
+    const fromHeader = raw === null ? Number.NaN : Number(raw);
+    return Number.isFinite(fromHeader) ? fromHeader : null;
+  }
+
+  /** The body's `resetsAt` when it parses as a date, else the named header, else `null`. */
+  private readReset(header: string): Date | null {
+    for (const value of [this.details?.resetsAt, this.headers.get(header)]) {
+      if (typeof value !== 'string') continue;
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+    return null;
   }
 }
 

@@ -14,7 +14,7 @@ export const compareByName = defineWorkflow<{ names: string[] }>({
   name: 'gunspec_compare_by_name',
   title: 'Compare firearms by name',
   description:
-    'Workflow. Compares two to five firearms, named as the user wrote them ("G19", "P320 Compact"), in a single call. Each name is resolved to a record, and only the figures that differ are returned. The lightest, shortest and highest-capacity firearms are identified. Names that do not match a single record are listed under `unresolved` with their candidates and are never guessed. Replaces one resolve call per name plus one compare call.',
+    'Workflow. Compares two to five firearms, named as the user wrote them ("G19", "P320 Compact"), in a single call. Each name is resolved to a record, and only the figures that differ are returned. The lightest, shortest and highest-capacity firearms are identified; a leader shared with others names them under `tiedWith`, and a figure every firearm shares has no leader. Names that do not match a single record are listed under `unresolved` with their candidates and are never guessed. Replaces one resolve call per name plus one compare call.',
   tier: 'builder',
   example: { names: ['Glock 17', 'Beretta 92FS'] },
   prompts: ['Compare the Glock 17 and the Beretta 92FS.'],
@@ -53,13 +53,29 @@ export const compareByName = defineWorkflow<{ names: string[] }>({
 
     const { items, deltas } = (await client.firearms.compare({ ids: ids.join(',') })).data;
     const byField = new Map(deltas.map((d) => [d.field, d]));
-    /* The record the smallest (or largest) value of a field belongs to. */
+    /*
+     * The records the smallest (or largest) value of a field belongs to.
+     *
+     * Every holder, not the first. `indexOf` handed a tie to whichever
+     * firearm was named first, so an AK-47 and an M4A1 at 30 rounds each came
+     * back with the AK as the highest capacity, and an assistant repeated it.
+     * Where every firearm holds the same value there is no leader, and null
+     * says so; where some share it, `tiedWith` names the others.
+     */
     const leader = (field: string, pick: 'min' | 'max') => {
       const delta = byField.get(field);
-      if (!delta) return null;
-      const index = delta.values.indexOf(delta[pick]);
-      const item = items[index];
-      return item ? { id: item.id, name: item.name, value: delta[pick] } : null;
+      if (!delta || delta[pick] == null) return null;
+      const known = delta.values.filter((v) => v != null);
+      if (known.length > 1 && delta.min === delta.max) return null;
+      const holders = items.filter((_, i) => delta.values[i] === delta[pick]);
+      const [first, ...rest] = holders;
+      if (!first) return null;
+      return {
+        id: first.id,
+        name: first.name,
+        value: delta[pick],
+        tiedWith: rest.map((item) => ({ id: item.id, name: item.name })),
+      };
     };
 
     return {

@@ -119,7 +119,16 @@ export interface DocsLimits {
   plans: DocsPlanLimits[];
   withoutKey: { requestsPerDay: number; maxPage: number | null };
   paginationBurst: { pages: number; windowSeconds: number };
-  retryAfterSeconds: { rateLimited: number; dailyCapReached: number };
+  retryAfterSeconds: {
+    /** The `Retry-After` sent with a per-minute refusal. */
+    rateLimited: number;
+    /**
+     * The longest `Retry-After` a daily refusal sends, a whole day. The value
+     * sent is the seconds left until the next midnight UTC, so it is never more
+     * than this; read it from the response, or from `error.dailyReset`.
+     */
+    dailyCapReached: number;
+  };
   keyHeaders: string[];
   docsUrl: string;
 }

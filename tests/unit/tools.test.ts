@@ -108,6 +108,26 @@ describe('executeTool', () => {
     expect(fetchMock.mock.calls.at(-1)![1]?.method).toBe('GET');
   });
 
+  it('joins load-carriage ids and attachments, leaving the march to the API', async () => {
+    const { client, lastUrl } = stubClient();
+    await executeTool(client, 'gunspec_load_carriage', { ids: ['hk416', 'fn-scar-l'], magazines: 7, kit_kg: 25 });
+    expect(lastUrl()).toBe('https://api.gunspec.io/v1/firearms/load-carriage?magazines=7&kit_kg=25&ids=hk416%2Cfn-scar-l');
+    await executeTool(client, 'gunspec_load_carriage', { ids: ['hk416'], attachments: ['aimpoint-compm5', 'surefire-socom556-rc2'] });
+    expect(lastUrl()).toBe('https://api.gunspec.io/v1/firearms/load-carriage?ids=hk416&attachments=aimpoint-compm5%2Csurefire-socom556-rc2');
+    expect(getTool('gunspec_load_carriage')?.tier).toBe('builder');
+  });
+
+  it('joins the ids of the recoil, point-blank and ammo-load tools, leaving the rest to the API', async () => {
+    const { client, lastUrl } = stubClient();
+    await executeTool(client, 'gunspec_firearm_recoil', { ids: ['hk416', 'm4-carbine'], ammo_id: 'm855' });
+    expect(lastUrl()).toBe('https://api.gunspec.io/v1/firearms/recoil?ammo_id=m855&ids=hk416%2Cm4-carbine');
+    await executeTool(client, 'gunspec_point_blank_range', { ids: ['hk416'], target_mm: 200 });
+    expect(lastUrl()).toBe('https://api.gunspec.io/v1/firearms/point-blank?target_mm=200&ids=hk416');
+    await executeTool(client, 'gunspec_ammo_load', { ids: ['hk416', 'ak-74'], budget_kg: 5 });
+    expect(lastUrl()).toBe('https://api.gunspec.io/v1/firearms/ammo-load?budget_kg=5&ids=hk416%2Cak-74');
+    for (const name of ['gunspec_firearm_recoil', 'gunspec_point_blank_range', 'gunspec_ammo_load']) expect(getTool(name)?.tier).toBe('builder');
+  });
+
   it('attaches a tracked href to each offer', async () => {
     const { client } = stubClient();
     const offers = (await executeTool(client, 'gunspec_firearm_offers', { id: 'ak-47', region: 'AU' })) as Array<{ href: string | null }>;

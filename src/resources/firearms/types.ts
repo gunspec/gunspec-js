@@ -11,6 +11,10 @@ export type { HttpClient, APIResponse, PaginatedResponse } from '../../core';
 export type {
   Firearm,
   FirearmComparison,
+  LoadCarriageComparison,
+  RecoilComparison,
+  PointBlankComparison,
+  AmmoLoadComparison,
   FirearmDetail,
   FirearmImage,
   FirearmCalculation,
@@ -45,4 +49,8 @@ export type {
   SilhouetteParams,
   CalculateBallisticsParams,
   LoadFirearmParams,
+  LoadCarriageParams,
+  RecoilParams,
+  PointBlankParams,
+  AmmoLoadParams,
 } from '../../types';

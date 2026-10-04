@@ -47,7 +47,7 @@ Security defaults you get without asking:
 - **The key never appears in an error, a log line, `JSON.stringify(client)` or `console.log(client)`**; it is masked (`gsk_...feca`).
 - **The key stays on the API's own origin.** Redirects are followed by the SDK, not by `fetch`: a hop to another host goes without `X-API-Key` or `Authorization`, a hop from `https` to `http` is refused with `ConnectionError`, and a chain stops after five. A browser hides where a redirect goes, so there a redirecting call under `X-API-Key` throws `ConfigurationError`; use `authScheme: 'bearer'`, whose header the browser removes on a cross-origin hop.
 - **An id of `''`, `.` or `..` throws `InvalidArgumentError`** before any request, because URL parsing would otherwise send the call to a different endpoint.
-- **`Retry-After` is honoured, and bounded.** A 429 or 503 that asks for a wait longer than `maxRetryAfterMs` is surfaced instead of slept through, and a spent daily allowance (`DAILY_CAP_EXCEEDED`) is never retried.
+- **`Retry-After` is honoured, and bounded.** A 429 or 503 that asks for a wait longer than `maxRetryAfterMs` (30 seconds by default) is surfaced instead of slept through. That covers a spent daily or monthly allowance (`DAILY_CAP_EXCEEDED`, `MCP_DAILY_CAP_EXCEEDED`, `MONTHLY_CAP_EXCEEDED`): the reset is hours or weeks away, so the error comes straight back with it (`error.dailyReset`, `error.monthlyReset`). When the reset is inside `maxRetryAfterMs`, a call refused a second before midnight waits the second and succeeds. A call made after a refusal is refused too (it does not spend the month), and a free key that keeps calling is paused (`PermissionError` with the reason `KEY_ON_HOLD`, never retried; `error.retryAfter` is the seconds until the pause ends, and a paid plan lifts it at once).
 
 ## Resources
 
@@ -130,7 +130,7 @@ for await (const firearm of client.firearms.listAutoPaging({ category: 'rifle' }
 
 Every response carries `etag`, `cacheControl`, `requestId` and `rateLimit`. Every record carries `updatedAt` (when it changed) and `version` (its content hash: equal versions mean equal data, on every plan).
 
-With `etagCache: true` the SDK sends `If-None-Match` on every GET and serves the held body when the API answers `304`. A 304 does not count against the plan's daily cap.
+With `etagCache: true` the SDK sends `If-None-Match` on every GET and serves the held body when the API answers `304`. A 304 spends nothing: it does not count against the daily limit or the month.
 
 ```typescript
 const client = new GunSpec({ etagCache: true });
@@ -139,6 +139,57 @@ const b = await client.firearms.get('ak-47'); // 304, b.fromCache === true, b.da
 ```
 
 Pass an `ETagStore` (`get`/`set`) to persist across processes. Keys are namespaced by a fingerprint of the API key, so two keys never share a plan-shaped body. Hold your own tags with `client.http.requestConditional({ method: 'GET', path, ifNoneMatch })`, which returns `{ notModified: true }` on a 304.
+
+## Stay inside your allowance
+
+Two allowances can refuse a call: the **day**, held against each key, and the **month**, which is the plan's and belongs to the whole account, so every key draws on one pool. Both ride on every response as what is left after that call, so a script can pace itself without asking. It is on `response.rateLimit`:
+
+```typescript
+const res = await client.firearms.list({ category: 'pistol' });
+
+const { dailyLimit, dailyRemaining, dailyReset, monthlyLimit, monthlyRemaining, monthlyReset } = res.rateLimit;
+// dailyLimit: requests this key may make per UTC day (null on a plan with no daily limit)
+// dailyRemaining: what is left today after this call, never below zero. 0 on the last call that is served.
+// dailyReset: a Date, the next midnight UTC
+// monthlyLimit, monthlyRemaining, monthlyReset: the same for the plan's month, for the whole
+//   account. All null on a call made without a key. The reset is midnight UTC on the 1st.
+```
+
+Stop when either reaches zero. The day comes back at `dailyReset`, so a job can sleep until then; the month can be weeks away, so stop the job and let a scheduler run the rest after `monthlyReset` instead of leaving a process sleeping:
+
+```typescript
+const sleepUntil = (when: Date) => new Promise((resolve) => setTimeout(resolve, Math.max(0, when.getTime() - Date.now())));
+
+if (monthlyRemaining === 0) {
+  console.log(`The month is spent. Run the rest after ${monthlyReset?.toISOString()}.`);
+  process.exit(0);
+}
+if (dailyRemaining !== null && dailyRemaining <= 5 && dailyReset) {
+  // Stop here and resume at the reset. A call made past zero is refused, and a free key
+  // that keeps calling after being refused is paused.
+  await sleepUntil(dailyReset);
+}
+```
+
+Only calls that were served spend the month: a call a limit refused, and a `304`, do not, so a retry loop against the daily limit cannot use the month up. The month is still the limit that binds on every paid plan, because the daily limit alone would allow far more than the plan includes, and an Explorer key's 200 requests a month are spent in about four days at its daily limit, after which every call is refused until the 1st. The plan tables have the current figures.
+
+Treat both figures as something to pace against: they are served from a short cache while you are well under the limit and read live once you are near it. `client.usage.get()` is the figure to reconcile against, and the one that shows every key at once: `data.currentMonth` has `used` (calls served this month), `limit`, `remaining` and `resetsAt`; `data.daily` has `limitPerKey`, `usedToday`, the busiest key's `remaining` and `resetsAt`; and `data.perKey[].remainingToday` has each key's own. `usage.get()` is itself a request, so pace on the response, not on a poll. A conditional request that answers `304` (see above) carries the same headers and spends nothing, so it is a free way to ask how much room is left before a large job.
+
+If you do hit a limit, the error carries the same facts:
+
+```typescript
+try {
+  await client.firearms.list();
+} catch (error) {
+  if (error instanceof RateLimitError && error.isDailyCap) {
+    console.log(`Spent. ${error.dailyLimit} a day; back at ${error.dailyReset?.toISOString()} (${error.retryAfter}s)`);
+  } else if (error instanceof RateLimitError && error.isMonthlyCap) {
+    console.log(`Month spent. ${error.monthlyLimit} a month; back at ${error.monthlyReset?.toISOString()}`);
+  }
+}
+```
+
+`retryAfter` on a daily or monthly refusal is the real time left until the reset (up to a whole day, or a whole month), not a fixed hour. The SDK retries one of these only when that wait is within `maxRetryAfterMs`, so a call refused at 23:59:58 waits the two seconds and succeeds; a longer wait comes straight back as the error, with the reset in hand. `isDailyCap` is the day only, including the hosted MCP server's share of it; a caller that wants "any allowance that resets later" writes `error.isDailyCap || error.isMonthlyCap`. The per-minute limit is separate: `RATE_LIMITED` with a `retryAfter` of 60, which the SDK waits out for you when your `maxRetryAfterMs` allows it.
 
 ## Error Handling
 
@@ -153,7 +204,9 @@ try {
   if (error instanceof PermissionError && error.reason === 'PLAN_REQUIRED') {
     console.log(`Needs ${error.requiredTier}. ${error.action}`);
   } else if (error instanceof RateLimitError) {
-    console.log(error.isDailyCap ? 'Daily allowance spent' : `Retry in ${error.retryAfter}s`);
+    if (error.isDailyCap) console.log(`Daily allowance spent, back at ${error.dailyReset?.toISOString()}`);
+    else if (error.isMonthlyCap) console.log(`Monthly allowance spent, back at ${error.monthlyReset?.toISOString()}`);
+    else console.log(`Retry in ${error.retryAfter}s`);
   } else if (error instanceof AuthenticationError) {
     console.log(error.reason); // KEY_MISSING | KEY_INVALID | KEY_DISABLED | KEY_EXPIRED | ...
   } else if (error instanceof APIError) {

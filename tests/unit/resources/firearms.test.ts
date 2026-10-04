@@ -131,6 +131,54 @@ describe('FirearmsResource', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // loadCarriage
+  // ---------------------------------------------------------------------------
+  describe('loadCarriage', () => {
+    it('calls get with /v1/firearms/load-carriage and params', async () => {
+      const params = { ids: 'hk416,fn-scar-l', magazines: 7, kit_kg: 25, terrain: 'light_brush' as const };
+      client.get.mockResolvedValue(mockApiResponse({ results: [] }));
+      await firearms.loadCarriage(params);
+      expect(client.get).toHaveBeenCalledWith('/v1/firearms/load-carriage', params);
+    });
+
+    it('sends ids alone, leaving every default to the API', async () => {
+      client.get.mockResolvedValue(mockApiResponse({ results: [] }));
+      await firearms.loadCarriage({ ids: 'hk416' });
+      expect(client.get).toHaveBeenCalledWith('/v1/firearms/load-carriage', { ids: 'hk416' });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // recoil, pointBlank, ammoLoad
+  // ---------------------------------------------------------------------------
+  describe('recoil', () => {
+    it('calls get with /v1/firearms/recoil and params', async () => {
+      const params = { ids: 'hk416,m4-carbine', ammo_id: 'm855', powder_charge_g: 1.6, gas_class: 'rifle' as const };
+      client.get.mockResolvedValue(mockApiResponse({ results: [] }));
+      await firearms.recoil(params);
+      expect(client.get).toHaveBeenCalledWith('/v1/firearms/recoil', params);
+    });
+  });
+
+  describe('pointBlank', () => {
+    it('calls get with /v1/firearms/point-blank and params', async () => {
+      const params = { ids: 'hk416,fn-scar-h', target_mm: 200 };
+      client.get.mockResolvedValue(mockApiResponse({ results: [] }));
+      await firearms.pointBlank(params);
+      expect(client.get).toHaveBeenCalledWith('/v1/firearms/point-blank', params);
+    });
+  });
+
+  describe('ammoLoad', () => {
+    it('calls get with /v1/firearms/ammo-load and params', async () => {
+      const params = { ids: 'hk416,ak-74', budget_kg: 5, magazines: 7 };
+      client.get.mockResolvedValue(mockApiResponse({ results: [] }));
+      await firearms.ammoLoad(params);
+      expect(client.get).toHaveBeenCalledWith('/v1/firearms/ammo-load', params);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // gameMeta
   // ---------------------------------------------------------------------------
   describe('gameMeta', () => {

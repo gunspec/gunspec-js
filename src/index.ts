@@ -70,6 +70,7 @@ export {
   ManufacturersResource,
   CalibersResource,
   CategoriesResource,
+  FeaturesResource,
   StatsResource,
   GameResource,
   GameStatsResource,

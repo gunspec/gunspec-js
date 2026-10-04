@@ -106,7 +106,7 @@ export interface AttachmentDetail extends Omit<Attachment, 'provides'> {
   yearIntroduced?: number | null;
   /** Any-of within a group, all-of across groups. Empty means universal. */
   requires: Array<Array<{ id: string; name: string; kind: string }>>;
-  provides: Array<{ id: string; name: string; kind: string }>;
+  provides: Array<{ id: string; name: string; kind: string; position: string | null }>;
   caliberRatings: Array<{
     caliberId: string;
     caliberName: string | null;
@@ -126,6 +126,27 @@ export interface FitVia {
   adapterId: string | null;
 }
 
+/**
+ * One way an attachment goes on: directly, or through one adapter. Routes are ordered best first:
+ * direct before an adapter, over the receiver before forward of it for a sight, then by confidence.
+ * The top-level fields of the fit are the first route.
+ */
+export interface FitRoute {
+  /** `direct` on the firearm's own interface, or `adapter` through the part named in `adapter`. */
+  fitType?: 'direct' | 'adapter';
+  /** The adapter this route goes through, or null when the attachment fits directly. */
+  adapter?: { id: string; name: string } | null;
+  /** The interfaces that satisfied the attachment's requirements, with where each came from. */
+  via?: FitVia[];
+  /** How well evidenced this row is, 0 to 1. A minimum, not an average. */
+  confidence?: number;
+  source?: FitSource;
+  /** How well the adapter's own record is sourced, 0 to 1, when the route goes through one. */
+  adapterConfidence?: number | null;
+  /** What a person fitting it should know that does not stop it fitting. */
+  caveats?: string[];
+}
+
 /** An attachment with its fit verdict against one firearm. */
 export interface AttachmentFit extends Attachment {
   fits: boolean;
@@ -143,6 +164,10 @@ export interface AttachmentFit extends Attachment {
   reason: string;
   /** Present with `include=all` on an item that does not fit. */
   blockedBy?: string | null;
+  /** Every way it goes on, best first; the fields above are the first. Empty for a curated override, a universal fit and a row that does not fit. */
+  routes?: FitRoute[];
+  /** The best route's caveats. */
+  caveats?: string[];
 }
 
 /** `GET /v1/firearms/{id}/attachments`. */

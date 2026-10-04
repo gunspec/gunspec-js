@@ -1,11 +1,12 @@
 /**
- * Firearm tools: find, identify, read, compare.
+ * Firearm tools: find, identify, read, compare, cost to carry, recoil, point-blank range and ammunition per kilogram.
  *
  * @module
  */
 
 import { defineTool, PAGE, PER_PAGE, SLUG } from './types';
 import { FIREARM_STATUSES, MEDIA_KINDS } from '../types/vocabulary';
+import type { LoadCarriageModel, LoadCarriageTerrain, RecoilGasClass } from '../types';
 
 export const searchFirearms = defineTool<{ q: string; per_page?: number }>({
   name: 'gunspec_search_firearms',
@@ -125,6 +126,114 @@ export const compareFirearms = defineTool<{ ids: string[] }>({
   execute: async (client, { ids }) => (await client.firearms.compare({ ids: ids.join(',') })).data,
 });
 
+export const loadCarriage = defineTool<{
+  ids: string[]; body_mass_kg?: number; body_fat_pct?: number; kit_kg?: number; magazines?: number;
+  attachments?: string[]; speed_kmh?: number; grade_pct?: number; terrain?: LoadCarriageTerrain;
+  distance_km?: number; model?: LoadCarriageModel;
+}>({
+  name: 'gunspec_load_carriage',
+  title: 'Load carriage cost',
+  description:
+    'Returns the metabolic energy a foot march costs carrying each of one to five firearms, with its magazines and attachments, on top of the other kit carried, by the US Army LCDA equation (Looney et al. 2022) or the Pandolf equation (1977). Use this tool when the question is how much harder one firearm is to carry than another over a distance. Masses come from the catalog; a firearm missing its empty or loaded weight comes back with an error instead of a cost. The answer is energy cost only: it does not predict fatigue, marksmanship or time to exhaustion.',
+  tier: 'builder',
+  example: { ids: ['hk416', 'fn-scar-l'], magazines: 7, kit_kg: 25, distance_km: 20 },
+  prompts: ['How much more energy does a 20 km march cost carrying an FN SCAR-L than an HK416, with seven magazines and 25 kg of kit?'],
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      ids: { type: 'array', description: 'One to five firearm slugs.', items: { type: 'string' } },
+      body_mass_kg: { type: 'number', description: 'Body mass of the person marching, in kg.', minimum: 40, maximum: 160, default: 80 },
+      body_fat_pct: { type: 'number', description: 'Body fat as a percentage of body mass.', minimum: 3, maximum: 50, default: 15 },
+      kit_kg: { type: 'number', description: 'Everything else carried, in kg: armour, pack, water.', minimum: 0, maximum: 120, default: 0 },
+      magazines: { type: 'integer', description: 'Full magazines carried in total, the one in the firearm included. 0 carries it unloaded.', minimum: 0, maximum: 20, default: 1 },
+      attachments: { type: 'array', description: 'Up to ten attachment slugs, added to every firearm by their recorded weight.', items: { type: 'string' } },
+      speed_kmh: { type: 'number', description: 'Marching speed in km/h.', minimum: 1, maximum: 10, default: 4.8 },
+      grade_pct: { type: 'number', description: 'Slope as a percentage, rise over run; negative is downhill.', minimum: -30, maximum: 30, default: 0 },
+      terrain: { type: 'string', description: 'The surface marched over.', enum: ['paved', 'dirt_road', 'light_brush', 'heavy_brush', 'swampy_bog', 'loose_sand'], default: 'paved' },
+      distance_km: { type: 'number', description: 'March distance in km.', minimum: 0.1, maximum: 200, default: 20 },
+      model: { type: 'string', description: 'The equation: lcda, or pandolf for comparison with older studies (level and uphill only).', enum: ['lcda', 'pandolf'], default: 'lcda' },
+    },
+    required: ['ids'],
+    additionalProperties: false,
+  },
+  execute: async (client, { ids, attachments, ...march }) =>
+    (await client.firearms.loadCarriage({ ...march, ids: ids.join(','), attachments: attachments?.join(',') })).data,
+});
+
+export const firearmRecoil = defineTool<{
+  ids: string[]; ammo_id?: string; mass?: 'loaded' | 'empty'; powder_charge_g?: number; gas_class?: RecoilGasClass;
+}>({
+  name: 'gunspec_firearm_recoil',
+  title: 'Free recoil',
+  description:
+    'Returns the free recoil of one to five firearms firing a load: the velocity each is pushed back at, the energy it takes and the impulse, by the free recoil formula SAAMI publishes, from the firearm\'s recorded mass and the muzzle velocity its own barrel gives the load. Use this tool when the question is how hard one firearm kicks against another. The catalog holds no powder charge, so without powder_charge_g only the bullet is counted and every figure is a lower bound; say so when you quote it. It is free recoil, not felt recoil, and does not count a muzzle brake.',
+  tier: 'builder',
+  example: { ids: ['hk416', 'm4-carbine'], ammo_id: 'm855' },
+  prompts: ['How much free recoil does an HK416 have against an M4 carbine firing M855?'],
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      ids: { type: 'array', description: 'One to five firearm slugs.', items: { type: 'string' } },
+      ammo_id: { type: 'string', description: 'The load every firearm fires. Leave it out to fire each with the load its ballistic profile uses.' },
+      mass: { type: 'string', description: 'Which recorded weight recoils.', enum: ['loaded', 'empty'], default: 'loaded' },
+      powder_charge_g: { type: 'number', description: 'The load\'s powder charge in grams, when the user states one. Needs ammo_id.', minimum: 0, maximum: 100 },
+      gas_class: { type: 'string', description: 'The SAAMI class whose gas velocity factor applies, in place of the one read from the category.', enum: ['rifle', 'shotgun', 'shotgun_long_barrel', 'handgun'] },
+    },
+    required: ['ids'],
+    additionalProperties: false,
+  },
+  execute: async (client, { ids, ...shot }) => (await client.firearms.recoil({ ...shot, ids: ids.join(',') })).data,
+});
+
+export const pointBlankRange = defineTool<{ ids: string[]; ammo_id?: string; target_mm?: number; sight_height_mm?: number }>({
+  name: 'gunspec_point_blank_range',
+  title: 'Point-blank and supersonic range',
+  description:
+    'Returns the maximum point-blank range of one to five firearms, the furthest distance the bullet stays within half a target\'s diameter of the line of sight with no holdover, with the zero that gives it, and how far the bullet stays supersonic. Computed on the same trajectory as the ballistic profile, from each firearm\'s own barrel, in the ICAO standard atmosphere. Use this tool for questions about point-blank range, what distance to zero at, or when a bullet goes subsonic.',
+  tier: 'builder',
+  example: { ids: ['hk416', 'fn-scar-h'], target_mm: 200 },
+  prompts: ['What is the maximum point-blank range of an HK416 against an FN SCAR-H on a 200 mm target?'],
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      ids: { type: 'array', description: 'One to five firearm slugs.', items: { type: 'string' } },
+      ammo_id: { type: 'string', description: 'The load every firearm fires. Leave it out to fire each with the load its ballistic profile uses.' },
+      target_mm: { type: 'number', description: 'Target diameter in mm.', minimum: 20, maximum: 2000, default: 200 },
+      sight_height_mm: { type: 'number', description: 'Sight height above the bore in mm. Leave it out for the height assumed for the category.', minimum: 0, maximum: 150 },
+    },
+    required: ['ids'],
+    additionalProperties: false,
+  },
+  execute: async (client, { ids, ...target }) => (await client.firearms.pointBlank({ ...target, ids: ids.join(',') })).data,
+});
+
+export const ammoLoad = defineTool<{ ids: string[]; ammo_id?: string; budget_kg?: number; magazines?: number; rounds?: number }>({
+  name: 'gunspec_ammo_load',
+  title: 'Ammunition per kilogram',
+  description:
+    'Returns how much ammunition one to five firearms carry per kilogram: rounds per kilogram of full magazines and how many full magazines fit a weight budget, derived from each firearm\'s loaded and empty weights, and the estimated mass of a basic load of rounds and magazines from a fitted cartridge-mass model. Derived and estimated figures are labelled; always say which a figure is, and give an estimate with its range. A warning beside a magazine means the catalog\'s weights for it look wrong.',
+  tier: 'builder',
+  example: { ids: ['hk416', 'ak-74'], budget_kg: 5 },
+  prompts: ['How many rounds can I carry in 5 kg of magazines for an HK416 against an AK-74?'],
+  readOnly: true,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      ids: { type: 'array', description: 'One to five firearm slugs.', items: { type: 'string' } },
+      ammo_id: { type: 'string', description: 'A load whose bullet the estimate uses. Leave it out for each cartridge\'s typical bullet.' },
+      budget_kg: { type: 'number', description: 'A weight of full magazines to fill, in kg.', minimum: 0.1, maximum: 100, default: 5 },
+      magazines: { type: 'integer', description: 'Full magazines in the estimated basic load.', minimum: 0, maximum: 50, default: 7 },
+      rounds: { type: 'integer', description: 'Rounds in the estimated basic load. Leave it out for magazines times the capacity.', minimum: 1, maximum: 10000 },
+    },
+    required: ['ids'],
+    additionalProperties: false,
+  },
+  execute: async (client, { ids, ...load }) => (await client.firearms.ammoLoad({ ...load, ids: ids.join(',') })).data,
+});
+
 export const similarFirearms = defineTool<{ id: string }>({
   name: 'gunspec_similar_firearms',
   title: 'Similar firearms',
@@ -195,5 +304,5 @@ export const topFirearms = defineTool<{
 
 export const CATALOG_TOOLS = [
   searchFirearms, resolveFirearm, listFirearms, getFirearm, compareFirearms,
-  similarFirearms, firearmVariants, firearmMedia, topFirearms,
+  loadCarriage, firearmRecoil, pointBlankRange, ammoLoad, similarFirearms, firearmVariants, firearmMedia, topFirearms,
 ] as const;

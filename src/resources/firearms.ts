@@ -13,6 +13,10 @@ import type { HttpClient, APIResponse, PaginatedResponse } from '../core';
 import type {
   Firearm,
   FirearmComparison,
+  LoadCarriageComparison,
+  RecoilComparison,
+  PointBlankComparison,
+  AmmoLoadComparison,
   FirearmDetail,
   FirearmImage,
   FirearmCalculation,
@@ -33,6 +37,10 @@ import type {
   ListFirearmsParams,
   SearchFirearmsParams,
   CompareFirearmsParams,
+  LoadCarriageParams,
+  RecoilParams,
+  PointBlankParams,
+  AmmoLoadParams,
   GameMetaParams,
   RandomFirearmParams,
   TopFirearmsParams,
@@ -194,6 +202,113 @@ export class FirearmsResource {
    */
   async compare(params: CompareFirearmsParams): Promise<APIResponse<FirearmComparison>> {
     return collection.compare(this.client, params);
+  }
+
+  /**
+   * Compare the metabolic cost of a foot march carrying each of up to 5 firearms. Builder.
+   *
+   * Each firearm is carried empty plus `magazines` full magazines and the
+   * named `attachments`, on top of `kit_kg` of other equipment, costed by the
+   * LCDA backpacking equation (Looney et al. 2022) or, with `model: 'pandolf'`,
+   * the Pandolf equation (1977). Masses come from the catalogue: a firearm
+   * missing its empty or loaded weight is answered with an `error` in place of
+   * its cost, and the others are still compared. Energy expenditure only:
+   * neither model predicts fatigue, marksmanship or time to exhaustion.
+   *
+   * @param params - Comma-separated firearm slugs and the march; every field but `ids` has a default.
+   * @returns The equation with its citations, the march as costed, and one result per firearm with its load, cost and difference from the lightest.
+   * @throws {BadRequestError} If more than 5 ids are given, a value is out of range, or `pandolf` is asked for a downhill grade.
+   * @throws {NotFoundError} If a firearm or attachment does not exist.
+   * @throws {AuthenticationError} If the API key is missing or invalid.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.firearms.loadCarriage({
+   *   ids: 'hk416,fn-scar-l',
+   *   magazines: 7,
+   *   kit_kg: 25,
+   *   distance_km: 20,
+   * });
+   * for (const r of data.results) console.log(r.firearm.name, r.cost?.energyKcal, r.delta?.energyKcal);
+   * ```
+   */
+  async loadCarriage(params: LoadCarriageParams): Promise<APIResponse<LoadCarriageComparison>> {
+    return collection.loadCarriage(this.client, params);
+  }
+
+  /**
+   * Compare the free recoil of each of up to 5 firearms firing a load. Builder.
+   *
+   * By the free recoil formula SAAMI publishes: the bullet's momentum, and the
+   * powder gas's at SAAMI's gas velocity factor for the class of firearm, over
+   * the firearm's recorded mass. The muzzle velocity is the one computed for
+   * each firearm's own barrel. The catalogue holds no powder charge: without
+   * `powder_charge_g` only the bullet is counted and every figure is a lower
+   * bound (`recoil.lowerBound`). Free recoil, not felt recoil.
+   *
+   * @param params - Comma-separated firearm slugs, and optionally the load, the mass basis, a powder charge and a SAAMI class.
+   * @returns The formula with its sources, the shot as answered, and one result per firearm with its recoil and difference from the softest.
+   * @throws {BadRequestError} If more than 5 ids are given, or a powder charge is given without `ammo_id`.
+   * @throws {NotFoundError} If a firearm or the load does not exist.
+   * @throws {AuthenticationError} If the API key is missing or invalid.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.firearms.recoil({ ids: 'hk416,m4-carbine', ammo_id: 'm855' });
+   * for (const r of data.results) console.log(r.firearm.name, r.recoil?.energyJ, r.recoil?.lowerBound);
+   * ```
+   */
+  async recoil(params: RecoilParams): Promise<APIResponse<RecoilComparison>> {
+    return collection.recoil(this.client, params);
+  }
+
+  /**
+   * Compare the maximum point-blank range and supersonic range of up to 5 firearms. Builder.
+   *
+   * On the trajectory the ballistic profile flies (the same load, the
+   * firearm's own barrel, the same solver, the ICAO standard atmosphere):
+   * the furthest distance the bullet stays within half `target_mm` of the
+   * line of sight, the zero that gives it, and how far it stays supersonic.
+   *
+   * @param params - Comma-separated firearm slugs, and optionally the load, the target size and the sight height.
+   * @returns The method, the atmosphere, the target, and one result per firearm with its ranges and difference from the longest.
+   * @throws {BadRequestError} If more than 5 ids are given or a value is out of range.
+   * @throws {NotFoundError} If a firearm or the load does not exist.
+   * @throws {AuthenticationError} If the API key is missing or invalid.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.firearms.pointBlank({ ids: 'hk416,fn-scar-h', target_mm: 200 });
+   * for (const r of data.results) console.log(r.firearm.name, r.pointBlank?.rangeM, r.pointBlank?.farZeroM);
+   * ```
+   */
+  async pointBlank(params: PointBlankParams): Promise<APIResponse<PointBlankComparison>> {
+    return collection.pointBlank(this.client, params);
+  }
+
+  /**
+   * Compare how much ammunition each of up to 5 firearms carries per kilogram. Builder.
+   *
+   * Derived figures (a full magazine as loaded less empty weight, rounds per
+   * kilogram, what `budget_kg` holds) and estimated ones (a basic load's mass
+   * by the fitted cartridge-mass model, with its error as a range) are
+   * labelled and never mixed. A derived magazine lighter than its rounds is
+   * reported with a warning.
+   *
+   * @param params - Comma-separated firearm slugs, and optionally a load, a weight budget, and the basic load's magazines or rounds.
+   * @returns The method, the load as answered, and one result per firearm with its magazine, budget, estimate and difference from the densest.
+   * @throws {BadRequestError} If more than 5 ids are given or a value is out of range.
+   * @throws {NotFoundError} If a firearm or the load does not exist.
+   * @throws {AuthenticationError} If the API key is missing or invalid.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.firearms.ammoLoad({ ids: 'hk416,ak-74', budget_kg: 5 });
+   * for (const r of data.results) console.log(r.firearm.name, r.magazine?.roundsPerKg, r.budget?.rounds, r.warnings);
+   * ```
+   */
+  async ammoLoad(params: AmmoLoadParams): Promise<APIResponse<AmmoLoadComparison>> {
+    return collection.ammoLoad(this.client, params);
   }
 
   /**
@@ -478,7 +593,7 @@ export class FirearmsResource {
    *
    * @example
    * ```typescript
-   * const { data } = await client.firearms.getImages('glock-17-gen5');
+   * const { data } = await client.firearms.getImages('glock-g17-gen5');
    * for (const img of data) {
    *   console.log(img.url, img.width, img.height);
    * }
@@ -554,7 +669,7 @@ export class FirearmsResource {
    *
    * @example
    * ```typescript
-   * const { data } = await client.firearms.getFamilyTree('m16a2');
+   * const { data } = await client.firearms.getFamilyTree('colt-m16a2');
    * console.log(data.ancestors, data.descendants);
    * ```
    */
@@ -787,7 +902,7 @@ export class FirearmsResource {
    * ```typescript
    * // The id comes from getImages() on the same firearm: it is a row id, not
    * // something to memorise.
-   * const { data } = await client.firearms.getImageAsset('glock-17-gen5', 6563, {
+   * const { data } = await client.firearms.getImageAsset('glock-g17-gen5', 6563, {
    *   variant: 'thumb',
    * });
    * console.log(data.dataUri.slice(0, 32), data.mimeType);

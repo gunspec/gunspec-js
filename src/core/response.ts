@@ -23,8 +23,12 @@ export function parseRateLimitHeaders(headers: Headers): RateLimitInfo {
     return Number.isNaN(num) ? null : num;
   };
 
-  const reset = headers.get('X-Daily-Reset');
-  const resetAt = reset === null ? null : new Date(reset);
+  const date = (name: string): Date | null => {
+    const raw = headers.get(name);
+    if (raw === null) return null;
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
 
   return {
     /* Parsed, not hardcoded to null, so a proxy in front of this API that does
@@ -34,7 +38,10 @@ export function parseRateLimitHeaders(headers: Headers): RateLimitInfo {
     reset: parse('X-RateLimit-Reset'),
     dailyLimit: parse('X-Daily-Limit'),
     dailyRemaining: parse('X-Daily-Remaining'),
-    dailyReset: resetAt !== null && !Number.isNaN(resetAt.getTime()) ? resetAt : null,
+    dailyReset: date('X-Daily-Reset'),
+    monthlyLimit: parse('X-Monthly-Limit'),
+    monthlyRemaining: parse('X-Monthly-Remaining'),
+    monthlyReset: date('X-Monthly-Reset'),
   };
 }
 
