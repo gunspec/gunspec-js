@@ -2,6 +2,14 @@
 
 All notable changes to `@buun_group/gunspec-sdk`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package follows [Semantic Versioning](https://semver.org/).
 
+## 0.14.1 (2026-10-04)
+
+
+### Fixed
+
+* responses stop carrying console columns, and the spec says which fields are conditional (9452b45)
+* **sdk:** the examples compare a firearm that production still serves (aa7bd93)
+
 ## 0.14.0 (2026-10-04)
 
 

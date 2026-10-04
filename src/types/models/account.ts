@@ -40,6 +40,10 @@ export interface Favorite {
   action_type: string | null;
   /** ISO 3166-1 alpha-2 country of origin. */
   country_of_origin: string | null;
+  /** Unloaded weight in grams, or null where the record has none. */
+  weight_empty_g: number | null;
+  /** Barrel length in millimetres, or null where the record has none. */
+  barrel_length_mm: number | null;
   /** Line-art silhouette, or null where none has been drawn. */
   svg_line_art_url: string | null;
   /** GLB model, or null where none is on file. */

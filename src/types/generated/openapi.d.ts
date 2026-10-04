@@ -6359,6 +6359,16 @@ export interface components {
              * @example AT
              */
             country_of_origin?: string | null;
+            /**
+             * @description Unloaded weight in grams, one of the two figures a catalogue card draws beside the year. Null where the record has none.
+             * @example 625
+             */
+            weight_empty_g?: number | null;
+            /**
+             * @description Barrel length in millimetres, the other of the two figures a card draws. Null where the record has none.
+             * @example 114
+             */
+            barrel_length_mm?: number | null;
             /** @description Line-art silhouette, or null where none has been drawn. */
             svg_line_art_url?: string | null;
             /** @description GLB model, or null where none is on file. */
@@ -13439,12 +13449,12 @@ export interface operations {
                                  * @description Stable id, derived from the finding rather than assigned, so the same finding is the same task tomorrow.
                                  * @example contradiction:caliber-confidence-has-a-source:12-gauge-3-5
                                  */
-                                taskKey?: string;
+                                taskKey: string;
                                 /**
                                  * @description The task's number; `/v1/data/tasks/{number}` loads it.
                                  * @example 1204
                                  */
-                                number?: number | null;
+                                number: number | null;
                                 /** @description With `include=research` only: what a researcher needs, read from the task. Never its result. */
                                 research?: {
                                     /**
@@ -13515,71 +13525,71 @@ export interface operations {
                                  * @example contradiction
                                  * @enum {string}
                                  */
-                                kind?: "gap" | "contradiction" | "vocabulary" | "asset" | "verify" | "report";
+                                kind: "gap" | "contradiction" | "vocabulary" | "asset" | "verify" | "report";
                                 /**
                                  * @description Which catalog.
                                  * @example calibers
                                  */
-                                entity?: string;
+                                entity: string;
                                 /**
                                  * @description The record, or for a vocabulary task the value being decided.
                                  * @example 12-gauge-3-5
                                  */
-                                subject?: string;
+                                subject: string;
                                 /**
                                  * @description The check id or field this came from.
                                  * @example caliber-confidence-has-a-source
                                  */
-                                finding?: string | null;
+                                finding: string | null;
                                 /**
                                  * @description Production status, one of `in_production`, `discontinued`, `out_of_production`, `in_service`, `limited_production`, `prototype`. Discontinued records are kept deliberately: a rifle built in 2004 wears parts nobody sells today.
                                  * @example open
                                  * @enum {string}
                                  */
-                                status?: "open" | "claimed" | "in_progress" | "resolved" | "unverifiable" | "not_a_fault";
+                                status: "open" | "claimed" | "in_progress" | "resolved" | "unverifiable" | "not_a_fault";
                                 /**
                                  * @description How many records this would fix. One for most; a vocabulary decision covers every record holding that spelling.
                                  * @example 1
                                  */
-                                records?: number;
+                                records: number;
                                 /**
                                  * @description When the finding was first seen.
                                  * @example 2026-09-15T03:00:12Z
                                  */
-                                openedAt?: string;
+                                openedAt: string;
                                 /**
                                  * @description When a worker began, or null.
                                  * @example 2026-09-15T09:14:00Z
                                  */
-                                startedAt?: string | null;
+                                startedAt: string | null;
                                 /**
                                  * @description When it closed, or null.
                                  * @example null
                                  */
-                                closedAt?: string | null;
+                                closedAt: string | null;
                                 /**
                                  * @description Whether a worker has filed a conclusion. Never what it says.
                                  * @example false
                                  */
-                                hasResult?: boolean;
+                                hasResult: boolean;
                                 /**
                                  * @description Which kind of worker holds the task: `redback`, the platform's agent, or `staff`, a person. Null when nobody does. Never which agent or which person.
                                  * @example redback
                                  * @enum {string|null}
                                  */
-                                assignedTo?: "redback" | "staff" | null;
+                                assignedTo: "redback" | "staff" | null;
                                 /**
                                  * @description Why a closed task closed, as a code: `finding_gone` (the check no longer finds it, because the record was corrected), `worked` (a worker filed a conclusion) or `by_hand` (closed without one). Null while open. Never the note it was closed with.
                                  * @example finding_gone
                                  * @enum {string|null}
                                  */
-                                closedReason?: "finding_gone" | "worked" | "by_hand" | null;
+                                closedReason: "finding_gone" | "worked" | "by_hand" | null;
                                 /**
                                  * @description Who closed it, as a kind: `redback` (the platform's agent filed a conclusion nobody has judged yet), `redback_accepted` (a person accepted what the agent filed) or `team` (a person worked or closed it, or corrected the record so the check no longer finds it, which `closedReason` then says). Null while open. Never which agent or which person.
                                  * @example team
                                  * @enum {string|null}
                                  */
-                                closer?: "redback" | "redback_accepted" | "team" | null;
+                                closer: "redback" | "redback_accepted" | "team" | null;
                             }[];
                         };
                         pagination?: components["schemas"]["Pagination"];
@@ -13841,35 +13851,35 @@ export interface operations {
                              * @description The site, without `www.`; an archived copy counts as the site it captured.
                              * @example sigsauer.com
                              */
-                            host?: string;
+                            host: string;
                             /**
                              * @description What kind of source it is, in the source hierarchy.
                              * @example manufacturer
                              * @enum {string}
                              */
-                            kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                            kind: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
                             /**
                              * @description The kind's place in the hierarchy: 0 is the strongest (a maker's own page), 8 the weakest (unclassified).
                              * @example 0
                              */
-                            rank?: number;
+                            rank: number;
                             /**
                              * @description Why it has that kind: classed by a person from the site's own pages, a catalogued maker's own website, a .gov or .mil domain, or not yet classed.
                              * @example declared
                              * @enum {string}
                              */
-                            basis?: "declared" | "maker" | "rule" | "unclassified";
+                            basis: "declared" | "maker" | "rule" | "unclassified";
                             /**
                              * @description `authority` for a maker's own site, a standards body or a government; `classified` for every other kind a person has classed; `unclassified` otherwise.
                              * @example authority
                              * @enum {string}
                              */
-                            tier?: "authority" | "classified" | "unclassified";
+                            tier: "authority" | "classified" | "unclassified";
                             /**
                              * @description How many citations in the catalogue point at it.
                              * @example 200
                              */
-                            citations?: number;
+                            citations: number;
                             /**
                              * @description How many records of each catalog cite it at least once.
                              * @example {
@@ -13877,7 +13887,7 @@ export interface operations {
                              *       "manufacturers": 1
                              *     }
                              */
-                            records?: {
+                            records: {
                                 [key: string]: number;
                             };
                             /**
@@ -14045,35 +14055,35 @@ export interface operations {
                                  * @description The site, without `www.`; an archived copy counts as the site it captured.
                                  * @example sigsauer.com
                                  */
-                                host?: string;
+                                host: string;
                                 /**
                                  * @description What kind of source it is, in the source hierarchy.
                                  * @example manufacturer
                                  * @enum {string}
                                  */
-                                kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                                kind: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
                                 /**
                                  * @description The kind's place in the hierarchy: 0 is the strongest (a maker's own page), 8 the weakest (unclassified).
                                  * @example 0
                                  */
-                                rank?: number;
+                                rank: number;
                                 /**
                                  * @description Why it has that kind: classed by a person from the site's own pages, a catalogued maker's own website, a .gov or .mil domain, or not yet classed.
                                  * @example declared
                                  * @enum {string}
                                  */
-                                basis?: "declared" | "maker" | "rule" | "unclassified";
+                                basis: "declared" | "maker" | "rule" | "unclassified";
                                 /**
                                  * @description `authority` for a maker's own site, a standards body or a government; `classified` for every other kind a person has classed; `unclassified` otherwise.
                                  * @example authority
                                  * @enum {string}
                                  */
-                                tier?: "authority" | "classified" | "unclassified";
+                                tier: "authority" | "classified" | "unclassified";
                                 /**
                                  * @description How many citations in the catalogue point at it.
                                  * @example 200
                                  */
-                                citations?: number;
+                                citations: number;
                                 /**
                                  * @description How many records of each catalog cite it at least once.
                                  * @example {
@@ -14081,7 +14091,7 @@ export interface operations {
                                  *       "manufacturers": 1
                                  *     }
                                  */
-                                records?: {
+                                records: {
                                     [key: string]: number;
                                 };
                                 /**
@@ -14280,7 +14290,7 @@ export interface operations {
                         /** @description The response payload. */
                         data: {
                             /** @description The task, in the public shape the list returns. */
-                            task?: {
+                            task: {
                                 [key: string]: unknown;
                             };
                             /** @description With `include=research` only: what the check found, in the shape the list gives it. */

@@ -161,7 +161,7 @@ async function simulateMatchups() {
   console.log('\n--- Matchup Simulator ---')
 
   const matchups = [
-    ['ak-47', 'm16a4'],
+    ['ak-47', 'colt-m16a4'],
     ['glock-g17', 'beretta-92fs'],
     ['fn-fal', 'cetme-model-c'],
   ] as const
@@ -228,7 +228,7 @@ async function exportWeaponConfigs() {
   // Grab a curated set of weapons for a game
   const slugs = [
     'glock-g17', 'beretta-92fs', 'colt-1911-classic',   // pistols
-    'ak-47', 'm16a4', 'fn-fal',                          // rifles
+    'ak-47', 'colt-m16a4', 'fn-fal',                      // rifles
     'franchi-spas-12',                                    // shotgun
   ]
 

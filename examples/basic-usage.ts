@@ -46,7 +46,7 @@ async function main() {
   console.log('5 lightest firearms:', lightest.map((f) => f.name))
 
   // Head-to-head comparison
-  const { data: h2h } = await client.firearms.headToHead({ a: 'ak-47', b: 'm16a4' })
+  const { data: h2h } = await client.firearms.headToHead({ a: 'ak-47', b: 'colt-m16a4' })
   const verdictSummary = Object.entries(h2h.verdicts)
     .map(([field, v]) => `${field}: ${v.winner}`)
     .join(', ')
@@ -96,7 +96,7 @@ async function main() {
     console.log(`  ${tier}-tier (${items.length}): ${names}${more}`)
   }
 
-  const { data: matchup } = await client.game.matchups({ a: 'ak-47', b: 'm16a4' })
+  const { data: matchup } = await client.game.matchups({ a: 'ak-47', b: 'colt-m16a4' })
   console.log(`Matchup: ${matchup.a.name} (${matchup.aWins} wins) vs ${matchup.b.name} (${matchup.bWins} wins), ${matchup.draws} draws`)
 
   const { data: roster } = await client.game.roleRoster({ role: 'sniper', count: 3 })
