@@ -8456,6 +8456,11 @@ export interface operations {
                 per_page?: number;
                 /** @description Restrict the images on each row to one kind */
                 kind?: "silhouette" | "render" | "photo" | "schematic" | "model";
+                /**
+                 * @description Only these firearms, as a comma-separated list of ids (at most 24). A firearm with no imagery is left out of the answer.
+                 * @example ak-47,hk-mp5
+                 */
+                ids?: string;
             };
             header?: {
                 /** @description The `ETag` from a previous response. If the body would be byte-identical, the API answers `304 Not Modified` with no body. A 304 counts toward the per-minute rate limit but not the daily request allowance. */
@@ -12152,7 +12157,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Firearms in the catalog.
-                             * @example 8642
+                             * @example 8630
                              */
                             total_firearms?: number;
                             /**
@@ -12333,7 +12338,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Total records matching the query across every page.
-                             * @example 8642
+                             * @example 8630
                              */
                             total?: number;
                             /**
@@ -13101,7 +13106,7 @@ export interface operations {
                             firearms?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8642
+                                 * @example 8630
                                  */
                                 total?: number;
                                 /**
@@ -13117,7 +13122,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8642
+                                         * @example 8630
                                          */
                                         filled?: number;
                                         /**
@@ -13132,7 +13137,7 @@ export interface operations {
                             calibers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8642
+                                 * @example 8630
                                  */
                                 total?: number;
                                 /**
@@ -13148,7 +13153,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8642
+                                         * @example 8630
                                          */
                                         filled?: number;
                                         /**
@@ -13163,7 +13168,7 @@ export interface operations {
                             manufacturers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8642
+                                 * @example 8630
                                  */
                                 total?: number;
                                 /**
@@ -13179,7 +13184,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8642
+                                         * @example 8630
                                          */
                                         filled?: number;
                                         /**
@@ -13290,7 +13295,7 @@ export interface operations {
                                 entity?: string;
                                 /**
                                  * @description How many records that catalog holds.
-                                 * @example 8642
+                                 * @example 8630
                                  */
                                 total?: number;
                                 /** @description Keyed by kind: `silhouette`, `photo`, `render`, `model`, `schematic`. Each carries `records`, `assets` and `coveragePct`. */

@@ -2,6 +2,13 @@
 
 All notable changes to `@buun_group/gunspec-sdk`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package follows [Semantic Versioning](https://semver.org/).
 
+## 0.15.0 (2026-10-06)
+
+
+### Added
+
+* the filter bar draws each firearm type by a render, and the pistol example is a real record (6765369)
+
 ## 0.14.1 (2026-10-04)
 
 
