@@ -416,6 +416,23 @@ export const OFFER_STATUSES = [
 
 export type OfferStatus = (typeof OFFER_STATUSES)[number]
 
+/** Where a new model stands: `announced` when a source a reader can cite names it and the catalog has no record yet, `catalogued` once it does. */
+export const RELEASE_PUBLIC_STATUSES = [
+  'announced',
+  'catalogued',
+] as const
+
+export type ReleaseStatus = (typeof RELEASE_PUBLIC_STATUSES)[number]
+
+/** How much of `releasedAt` a source stated: only the year, the month, or the day. */
+export const RELEASE_DATE_PRECISIONS = [
+  'year',
+  'month',
+  'day',
+] as const
+
+export type ReleaseDatePrecision = (typeof RELEASE_DATE_PRECISIONS)[number]
+
 /** What a seller listing is for. */
 export const OFFER_TARGET_KINDS = [
   'attachment',

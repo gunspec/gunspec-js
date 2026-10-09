@@ -3402,6 +3402,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List new firearm models
+         * @description Returns new firearm models, newest announcement first, each with the date it was announced, the date GunSpec first read it, its alternate names and the pages that name it. A model appears only after research has read a source a reader can cite (the maker, a standards body, a government, a reference work or the press) and quoted the words that name it; a headline alone never makes a row. `status` says whether the catalog holds a record yet (`catalogued`, with `catalogueId`) or not (`announced`). Filter by day with `since` and `until`: they apply to `announcedAt`, or to the day GunSpec first read the model with `order=consumed`. A model with no dated source counts from the day it was first read.
+         *
+         *     Available on every plan. Requires an API key; Explorer keys receive a reduced field set.
+         */
+        get: operations["listReleases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3967,6 +3989,16 @@ export interface components {
          * @enum {string}
          */
         OfferStatus: "draft" | "published";
+        /**
+         * @description Where a new model stands: `announced` when a source a reader can cite names it and the catalog has no record yet, `catalogued` once it does.
+         * @enum {string}
+         */
+        ReleaseStatus: "announced" | "catalogued";
+        /**
+         * @description How much of `releasedAt` a source stated: only the year, the month, or the day.
+         * @enum {string}
+         */
+        ReleaseDatePrecision: "year" | "month" | "day";
         /**
          * @description What a seller listing is for.
          * @enum {string}
@@ -12157,7 +12189,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Firearms in the catalog.
-                             * @example 8630
+                             * @example 8629
                              */
                             total_firearms?: number;
                             /**
@@ -12338,7 +12370,7 @@ export interface operations {
                         data: {
                             /**
                              * @description Total records matching the query across every page.
-                             * @example 8630
+                             * @example 8629
                              */
                             total?: number;
                             /**
@@ -13106,7 +13138,7 @@ export interface operations {
                             firearms?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8630
+                                 * @example 8629
                                  */
                                 total?: number;
                                 /**
@@ -13122,7 +13154,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8630
+                                         * @example 8629
                                          */
                                         filled?: number;
                                         /**
@@ -13137,7 +13169,7 @@ export interface operations {
                             calibers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8630
+                                 * @example 8629
                                  */
                                 total?: number;
                                 /**
@@ -13153,7 +13185,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8630
+                                         * @example 8629
                                          */
                                         filled?: number;
                                         /**
@@ -13168,7 +13200,7 @@ export interface operations {
                             manufacturers?: {
                                 /**
                                  * @description Total records matching the query across every page.
-                                 * @example 8630
+                                 * @example 8629
                                  */
                                 total?: number;
                                 /**
@@ -13184,7 +13216,7 @@ export interface operations {
                                     [key: string]: {
                                         /**
                                          * @description How many rows carry a value for this field.
-                                         * @example 8630
+                                         * @example 8629
                                          */
                                         filled?: number;
                                         /**
@@ -13295,7 +13327,7 @@ export interface operations {
                                 entity?: string;
                                 /**
                                  * @description How many records that catalog holds.
-                                 * @example 8630
+                                 * @example 8629
                                  */
                                 total?: number;
                                 /** @description Keyed by kind: `silhouette`, `photo`, `render`, `model`, `schematic`. Each carries `records`, `assets` and `coveragePct`. */
@@ -14259,7 +14291,7 @@ export interface operations {
     getDataTask: {
         parameters: {
             query?: {
-                /** @description `research` adds what the check found (`research`, as the list gives it) and the accepted decision (`decision`). */
+                /** @description `research` adds what the check found (`research`, as the list gives it), the accepted decision (`decision`) and, where the catalogue fixed it, what the fix was and the pages it rests on (`fix`). */
                 include?: "research";
             };
             header?: never;
@@ -14348,6 +14380,37 @@ export interface operations {
                                  * @example 2026-09-25T10:12:00.000Z
                                  */
                                 reviewedAt?: string | null;
+                            } | null;
+                            /** @description With `include=research` only: what fixed the task, on a task that closed because the record was corrected in the catalogue: the value now written and the pages and words it rests on, read from the catalogue's research ledger when the task closed. Null on a task that closed any other way, and where the ledger holds nothing for the field. */
+                            fix?: {
+                                /**
+                                 * @description The value written to the record: text, a number, or a list of feature tags.
+                                 * @example The Zastava M80 is a locally produced Yugoslavian copy of the Soviet-era AKM.
+                                 */
+                                value?: string | number | string[] | null;
+                                /**
+                                 * @description The value as the page states it, unit included, on a figure.
+                                 * @example 4 in
+                                 */
+                                stated?: string | null;
+                                /** @description The pages read and their own words for the value, one entry per distinct quote. */
+                                evidence?: {
+                                    /**
+                                     * @description The page.
+                                     * @example https://example.com/spec
+                                     */
+                                    url?: string;
+                                    /**
+                                     * @description Its words.
+                                     * @example The M80 is a copy of the AKM.
+                                     */
+                                    quote?: string;
+                                }[];
+                                /**
+                                 * @description The day the research was written down.
+                                 * @example 2026-10-06
+                                 */
+                                researchedAt?: string | null;
                             } | null;
                         };
                     };
@@ -21599,6 +21662,167 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listReleases: {
+        parameters: {
+            query?: {
+                /** @description Page number, from 1 to 10,000 */
+                page?: components["parameters"]["page"];
+                /** @description Items per page (max 100) */
+                per_page?: components["parameters"]["per_page"];
+                /**
+                 * @description Only models on or after this day (`YYYY-MM-DD`)
+                 * @example 2026-09-01
+                 */
+                since?: string;
+                /** @description Only models on or before this day (`YYYY-MM-DD`) */
+                until?: string;
+                /**
+                 * @description Filter by catalog manufacturer id
+                 * @example glock
+                 */
+                maker?: string;
+                /** @description Filter by whether the catalog holds a record yet */
+                status?: "announced" | "catalogued";
+                /** @description Search the model name, its alternate names and the maker */
+                q?: string;
+                /** @description Sort and date-filter by the announcement date, or by the day GunSpec first read the model */
+                order?: "announced" | "consumed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List new firearm models */
+            200: {
+                headers: {
+                    "X-Daily-Limit": components["headers"]["DailyLimit"];
+                    "X-Daily-Remaining": components["headers"]["DailyRemaining"];
+                    "X-Daily-Reset": components["headers"]["DailyReset"];
+                    "X-Monthly-Limit": components["headers"]["MonthlyLimit"];
+                    "X-Monthly-Remaining": components["headers"]["MonthlyRemaining"];
+                    "X-Monthly-Reset": components["headers"]["MonthlyReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Always true on a successful response. Every error carries `false` and an `error` object instead.
+                         * @example true
+                         */
+                        success: boolean;
+                        /** @description One page of results. Use `pagination` to walk the rest. */
+                        data: {
+                            /**
+                             * @description Stable id of the release row.
+                             * @example 7c3f2a90-5e1b-4d8a-9b6c-2f4e8a1d0c35
+                             */
+                            id?: string;
+                            /**
+                             * @description The id the catalog gives the model once it holds a record. Informational: it can change if research settles a different name, so key on `id`.
+                             * @example northfield-arms-nf-9-compact
+                             */
+                            slug?: string;
+                            /**
+                             * @description The model's name as the maker writes it, settled by research from a page that states it.
+                             * @example Northfield Arms NF-9 Compact
+                             */
+                            name?: string;
+                            /** @description Other names the sources give the model. Each appears on a page research read; none is inferred. */
+                            alternateNames?: string[];
+                            /** @description The maker. `id` is the catalog manufacturer id, or null when the catalog holds no record of the maker yet. */
+                            manufacturer?: {
+                                /**
+                                 * @description Catalog manufacturer id.
+                                 * @example northfield-arms
+                                 */
+                                id: string | null;
+                                /**
+                                 * @description Maker name.
+                                 * @example Northfield Arms
+                                 */
+                                name: string;
+                            } | null;
+                            /**
+                             * @description Whether the catalog holds a record for the model yet.
+                             * @example announced
+                             * @enum {string}
+                             */
+                            status?: "announced" | "catalogued";
+                            /**
+                             * @description The firearm id once `status` is `catalogued`, for `GET /v1/firearms/{id}`. Null before.
+                             * @example null
+                             */
+                            catalogueId?: string | null;
+                            /**
+                             * @description The date (`YYYY-MM-DD`) of the earliest source a reader can cite that names the model. Null when no source carried a date.
+                             * @example 2026-09-18
+                             */
+                            announcedAt?: string | null;
+                            /**
+                             * @description When a source says the model ships or goes on sale, at the precision it gave: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null when no source states a date. "Spring 2027" is not a date and is never turned into one.
+                             * @example 2026-11
+                             */
+                            releasedAt?: string | null;
+                            /**
+                             * @description How much of `releasedAt` the source gave.
+                             * @example month
+                             * @enum {string|null}
+                             */
+                            releasedPrecision?: "year" | "month" | "day" | null;
+                            /**
+                             * @description When GunSpec first read the model (UTC): the date we consumed it. Always present.
+                             * @example 2026-09-19T04:15:02Z
+                             */
+                            firstSeenAt?: string;
+                            /**
+                             * @description When the row last changed (UTC).
+                             * @example 2026-09-21T09:30:11Z
+                             */
+                            updatedAt?: string;
+                            /**
+                             * @description The strongest kind among `sources`, strongest first: the maker's own page, a standards body, a government, a reference work, then press.
+                             * @example manufacturer
+                             * @enum {string|null}
+                             */
+                            bestSourceKind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other" | null;
+                            /** @description The pages that name the model, oldest first. Every release has at least one of a citable kind. */
+                            sources?: {
+                                /**
+                                 * @description A page that names the model. Open it to check the claim.
+                                 * @example https://www.example.com/news/northfield-nf-9-compact
+                                 */
+                                url?: string;
+                                /**
+                                 * @description What kind of page it is (`SourceKind`).
+                                 * @example manufacturer
+                                 * @enum {string}
+                                 */
+                                kind?: "manufacturer" | "standards_body" | "government" | "peer_reviewed" | "reference" | "aggregator" | "press" | "retailer" | "community" | "other";
+                                /**
+                                 * @description Who published it, when known.
+                                 * @example Northfield Arms
+                                 */
+                                publisher?: string | null;
+                                /**
+                                 * @description The page's own date (`YYYY-MM-DD`), when it carried one.
+                                 * @example 2026-09-18
+                                 */
+                                publishedAt?: string | null;
+                            }[];
+                        }[];
+                        pagination?: components["schemas"]["Pagination"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["InternalError"];
         };

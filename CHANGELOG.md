@@ -2,6 +2,15 @@
 
 All notable changes to `@buun_group/gunspec-sdk`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package follows [Semantic Versioning](https://semver.org/).
 
+## 0.16.0 (2026-10-09)
+
+
+### Added
+
+* a daily release radar and a Releases tab in Redback (5c96b35)
+* a release ledger and GET /v1/releases for new firearm models (71b1120)
+* a task the catalogue fixed shows what fixed it, and the page reads better (b4bb6da)
+
 ## 0.15.0 (2026-10-06)
 
 

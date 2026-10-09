@@ -7,4 +7,4 @@
  * `_publish-npm.yml` update both files), and release-please rewrites the
  * annotated line below when it prepares a release PR.
  */
-export const VERSION = '0.15.0' // x-release-please-version
+export const VERSION = '0.16.0' // x-release-please-version
